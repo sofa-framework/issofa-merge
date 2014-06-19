@@ -524,7 +524,7 @@ for (itIncludes=includeComponents.begin(); itIncludes!=includeComponents.end(); 
     {
         typedefFile << "\n//---------------------------------------------------------------------------------------------\n\
 //Typedef for " << itIncludes->first << "\n";
-        for (multimapConstIterator it=range.first; it!=range.second; it++)
+        for (multimapConstIterator it=range.first; it!=range.second; ++it)
         {
             std::string& str = (it->second);
 #ifdef WIN32
@@ -571,7 +571,7 @@ if (t != TYPE_COMBINATION)
         std::pair<multimapConstIterator,multimapConstIterator > range;
         range = simplificationTypedefComponents.equal_range(itIncludes->first);
 
-        for (multimapConstIterator it=range.first; it!=range.second; it++)
+        for (multimapConstIterator it=range.first; it!=range.second; ++it)
         {
             typedefFile << "typedef " << it->second << ";\n";
         }

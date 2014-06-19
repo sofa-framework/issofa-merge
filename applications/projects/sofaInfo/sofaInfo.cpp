@@ -86,7 +86,7 @@ int main(int /*argc*/, char** argv)
     while (it != end)
     {
         std::cout << (*it) << std::endl;
-        it++;
+        ++it;
     }
 
     it = targets.begin();
@@ -95,7 +95,7 @@ int main(int /*argc*/, char** argv)
     while (it != end)
     {
         std::cout << (*it) << std::endl;
-        it++;
+        ++it;
     }
 
     if (groot!=NULL)
