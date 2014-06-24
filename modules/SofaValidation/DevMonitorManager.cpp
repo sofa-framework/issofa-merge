@@ -71,9 +71,8 @@ void DevMonitorManager::init()
     getContext()->get<core::DevBaseMonitor, sofa::helper::vector<core::DevBaseMonitor*> >(&monitors, core::objectmodel::BaseContext::SearchDown);
 
     //remove itself
-    it = std::find(monitors.begin(), monitors.end(), this->toDevBaseMonitor());
-    if(it != monitors.end())
-        monitors.erase(it);
+    for (it = monitors.begin() ; (*it) != dynamic_cast<core::DevBaseMonitor*>(this) || it == monitors.end() ; ++it) ;
+    monitors.erase(it);
 
     sout << "Number of Monitors detected = " << monitors.size()  <<sendl;
 
