@@ -192,40 +192,6 @@ void RestShapeSpringsForceField<Rigid3dTypes>::addKToMatrix(const core::Mechanic
     */
 }
 
-template<>
-void RestShapeSpringsForceField<Rigid3dTypes>::draw(const core::visual::VisualParams* vparams)
-{
-    if (!vparams->displayFlags().getShowForceFields() || !drawSpring.getValue())
-        return;  /// \todo put this in the parent class
-
-    vparams->drawTool()->saveLastState();
-    vparams->drawTool()->setLightingEnabled(false);
-
-    sofa::helper::ReadAccessor< DataVecCoord > p0 = *getExtPosition();
-    sofa::helper::ReadAccessor< DataVecCoord > p = this->mstate->read(core::VecCoordId::position());
-
-    sofa::helper::vector< Vector3 > vertices;
-
-    for (unsigned int i=0; i<m_indices.size(); i++)
-    {
-        const unsigned int index = m_indices[i];
-
-        vertices.push_back(p[index].getCenter());
-
-        if(useRestMState)
-        {
-            const unsigned int ext_index = m_ext_indices[i];
-            vertices.push_back(p0[ext_index].getCenter());
-        }
-        else
-        {
-            vertices.push_back(p0[index].getCenter());
-        }
-    }
-    vparams->drawTool()->drawLines(vertices,5,springColor.getValue());
-    vparams->drawTool()->restoreLastState();
-}
-
 
 #endif // SOFA_FLOAT
 
@@ -328,118 +294,21 @@ void RestShapeSpringsForceField<Rigid3fTypes>::addKToMatrix(const core::Mechanic
     }
 }
 
-template<>
-void RestShapeSpringsForceField<Rigid3fTypes>::draw(const core::visual::VisualParams* vparams)
-{
-    if (!vparams->displayFlags().getShowForceFields() || !drawSpring.getValue())
-        return;  /// \todo put this in the parent class
-
-    vparams->drawTool()->saveLastState();
-    vparams->drawTool()->setLightingEnabled(false);
-
-    sofa::helper::ReadAccessor< DataVecCoord > p0 = *getExtPosition();
-    sofa::helper::ReadAccessor< DataVecCoord > p = this->mstate->read(core::VecCoordId::position());
-
-    sofa::helper::vector<sofa::defaulttype::Vector3> vertices;
-
-    for (unsigned int i=0; i<m_indices.size(); i++)
-    {
-        const unsigned int index = m_indices[i];
-
-        sofa::defaulttype::Vector3 v0(p[index].getCenter()[0],
-                                      p[index].getCenter()[1],
-                                      p[index].getCenter()[2]);
-        unsigned int tempIndex = (useRestMState) ? m_ext_indices[i] : index;
-
-        sofa::defaulttype::Vector3 v1(p0[tempIndex].getCenter()[0],
-                                      p0[tempIndex].getCenter()[1],
-                                      p0[tempIndex].getCenter()[2]);
-
-
-        vertices.push_back(v0);
-        vertices.push_back(v1);
-    }
-
-    vparams->drawTool()->drawLines(vertices,5,springColor.getValue());
-
-    vparams->drawTool()->restoreLastState();
-}
-
 #endif // SOFA_DOUBLE
-
-#ifndef SOFA_FLOAT
-
-/*
-template<>
-void RestShapeSpringsForceField<Vec3dTypes>::addDForce(VecDeriv& df, const VecDeriv &dx, SReal kFactor, SReal )
-{
-const VecIndex& indices = points.getValue();
-const VecReal& k = stiffness.getValue();
-
-if (k.size()!= indices.size() )
-{
-    sout << "WARNING : stiffness is not defined on each point, first stiffness is used" << sendl;
-
-    for (unsigned int i=0; i<indices.size(); i++)
-    {
-            df[indices[i]] -=  Springs_dir[i]  * k[0] * kFactor * dot(dx[indices[i]], Springs_dir[i]);
-    }
-}
-else
-{
-    for (unsigned int i=0; i<indices.size(); i++)
-    {
-    //	df[ indices[i] ] -=  dx[indices[i]] * k[i] * kFactor ;
-            df[indices[i]] -=   Springs_dir[i]  * k[indices[i]] * kFactor * dot(dx[indices[i]] , Springs_dir[i]);
-    }
-}
-}
-*/
-
-
-template<>
-void RestShapeSpringsForceField<Vec3dTypes>::draw(const core::visual::VisualParams *vparams)
-{
-#ifndef SOFA_NO_OPENGL
-    if (!vparams->displayFlags().getShowForceFields())
-        return;
-
-    if (!drawSpring.getValue())
-        return;
-
-    sofa::helper::ReadAccessor< DataVecCoord > p0 = *getExtPosition();
-    sofa::helper::ReadAccessor< DataVecCoord > p = this->mstate->read(core::VecCoordId::position());
-
-    const VecIndex& indices = m_indices;
-    const VecIndex& ext_indices = (useRestMState ? m_ext_indices : m_indices);
-
-    helper::vector< defaulttype::Vector3 > points;
-
-    for (unsigned int i = 0; i < indices.size(); i++)
-    {
-        points.push_back(p[indices[i]]);
-        points.push_back(p0[ext_indices[i]]);
-    }
-
-    vparams->drawTool()->drawLines(points, 5, springColor.getValue());
-#endif /* SOFA_NO_OPENGL */
-}
-#endif
-
 
 
 int RestShapeSpringsForceFieldClass = core::RegisterObject("Simple elastic springs applied to given degrees of freedom between their current and rest shape position")
 #ifndef SOFA_FLOAT
-        .add< RestShapeSpringsForceField<Vec3dTypes> >()
-        .add< RestShapeSpringsForceField<Vec1dTypes> >()
-        .add< RestShapeSpringsForceField<Rigid3dTypes> >()
+    .add< RestShapeSpringsForceField<Vec3dTypes> >()
+    .add< RestShapeSpringsForceField<Vec1dTypes> >()
+    .add< RestShapeSpringsForceField<Rigid3dTypes> >()
 #endif
 #ifndef SOFA_DOUBLE
-        .add< RestShapeSpringsForceField<Vec3fTypes> >()
-        .add< RestShapeSpringsForceField<Vec1fTypes> >()
-        .add< RestShapeSpringsForceField<Rigid3fTypes> >()
+    .add< RestShapeSpringsForceField<Vec3fTypes> >()
+    .add< RestShapeSpringsForceField<Vec1fTypes> >()
+    .add< RestShapeSpringsForceField<Rigid3fTypes> >()
 #endif
-        ;
+;
 
 #ifndef SOFA_FLOAT
 template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<Vec3dTypes>;
