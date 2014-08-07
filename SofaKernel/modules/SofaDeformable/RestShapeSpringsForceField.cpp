@@ -396,6 +396,34 @@ else
 }
 */
 
+
+template<>
+void RestShapeSpringsForceField<Vec3dTypes>::draw(const core::visual::VisualParams *vparams)
+{
+#ifndef SOFA_NO_OPENGL
+    if (!vparams->displayFlags().getShowForceFields())
+        return;
+
+    if (!drawSpring.getValue())
+        return;
+
+    sofa::helper::ReadAccessor< DataVecCoord > p0 = *getExtPosition();
+    sofa::helper::ReadAccessor< DataVecCoord > p = this->mstate->read(core::VecCoordId::position());
+
+    const VecIndex& indices = m_indices;
+    const VecIndex& ext_indices = (useRestMState ? m_ext_indices : m_indices);
+
+    helper::vector< defaulttype::Vector3 > points;
+
+    for (unsigned int i = 0; i < indices.size(); i++)
+    {
+        points.push_back(p[indices[i]]);
+        points.push_back(p0[ext_indices[i]]);
+    }
+
+    vparams->drawTool()->drawLines(points, 5, springColor.getValue());
+#endif /* SOFA_NO_OPENGL */
+}
 #endif
 
 
@@ -403,37 +431,25 @@ else
 int RestShapeSpringsForceFieldClass = core::RegisterObject("Simple elastic springs applied to given degrees of freedom between their current and rest shape position")
 #ifndef SOFA_FLOAT
         .add< RestShapeSpringsForceField<Vec3dTypes> >()
-//.add< RestShapeSpringsForceField<Vec2dTypes> >()
         .add< RestShapeSpringsForceField<Vec1dTypes> >()
-//.add< RestShapeSpringsForceField<Vec6dTypes> >()
         .add< RestShapeSpringsForceField<Rigid3dTypes> >()
-//.add< RestShapeSpringsForceField<Rigid2dTypes> >()
 #endif
 #ifndef SOFA_DOUBLE
         .add< RestShapeSpringsForceField<Vec3fTypes> >()
-//.add< RestShapeSpringsForceField<Vec2fTypes> >()
         .add< RestShapeSpringsForceField<Vec1fTypes> >()
-//.add< RestShapeSpringsForceField<Vec6fTypes> >()
         .add< RestShapeSpringsForceField<Rigid3fTypes> >()
-//.add< RestShapeSpringsForceField<Rigid2fTypes> >()
 #endif
         ;
 
 #ifndef SOFA_FLOAT
 template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<Vec3dTypes>;
-//template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<Vec2dTypes>;
 template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<Vec1dTypes>;
-//template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<Vec6dTypes>;
 template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<Rigid3dTypes>;
-//template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<Rigid2dTypes>;
 #endif
 #ifndef SOFA_DOUBLE
 template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<Vec3fTypes>;
-//template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<Vec2fTypes>;
 template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<Vec1fTypes>;
-//template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<Vec6fTypes>;
 template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<Rigid3fTypes>;
-//template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<Rigid2fTypes>;
 #endif
 
 } // namespace forcefield

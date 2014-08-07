@@ -54,7 +54,7 @@ RestShapeSpringsForceField<DataTypes>::RestShapeSpringsForceField()
     , external_points(initData(&external_points, "external_points", "points from the external Mechancial State that define the rest shape springs"))
     , recompute_indices(initData(&recompute_indices, true, "recompute_indices", "Recompute indices (should be false for BBOX)"))
     , drawSpring(initData(&drawSpring,false,"drawSpring","draw Spring"))
-    , springColor(initData(&springColor,sofa::defaulttype::Vec4f(0.0,1.0,0.0,1.0), "springColor","spring color"))
+    , springColor(initData(&springColor, sofa::defaulttype::Vec4f(0.f,1.f,0.f,1.f), "springColor", "spring color"))
     , restMState(NULL)
 //	, pp_0(NULL)
 {    
@@ -276,51 +276,6 @@ void RestShapeSpringsForceField<DataTypes>::addDForce(const core::MechanicalPara
     }
 }
 
-// draw for standard types (i.e Vec<1,2,3>)
-template<class DataTypes>
-void RestShapeSpringsForceField<DataTypes>::draw(const core::visual::VisualParams *vparams)
-{
-    if (!vparams->displayFlags().getShowForceFields() || !drawSpring.getValue())
-        return;  /// \todo put this in the parent class
-
-    if(DataTypes::spatial_dimensions > 3)
-    {
-        serr << "Draw function not implemented for this DataType" << sendl;
-        return;
-    }
-
-    vparams->drawTool()->saveLastState();
-    vparams->drawTool()->setLightingEnabled(false);
-
-    sofa::helper::ReadAccessor< DataVecCoord > p0 = *getExtPosition();
-
-    sofa::helper::ReadAccessor< DataVecCoord > p = this->mstate->read(core::VecCoordId::position());
-
-    const VecIndex& indices = m_indices;
-    const VecIndex& ext_indices = (useRestMState ? m_ext_indices : m_indices);
-
-    sofa::helper::vector<sofa::defaulttype::Vector3> vertices;
-
-    for (unsigned int i=0; i<indices.size(); i++)
-    {
-        const unsigned int index = indices[i];
-        const unsigned int ext_index = ext_indices[i];
-
-        sofa::defaulttype::Vector3 v0(0.0, 0.0, 0.0);
-        sofa::defaulttype::Vector3 v1(0.0, 0.0, 0.0);
-        for(unsigned int j=0 ; j<DataTypes::spatial_dimensions ; j++)
-        {
-            v0[j] = p[index][j];
-            v1[j] = p0[ext_index][j];
-        }
-
-        vertices.push_back(v0);
-        vertices.push_back(v1);
-    }
-    vparams->drawTool()->drawLines(vertices,5,springColor.getValue());
-
-    vparams->drawTool()->restoreLastState();
-}
 
 template<class DataTypes>
 void RestShapeSpringsForceField<DataTypes>::addKToMatrix(const core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix )
@@ -436,6 +391,53 @@ void RestShapeSpringsForceField<DataTypes>::addSubKToMatrix(const core::Mechanic
             }
         }
     }
+}
+
+
+// draw for standard types (i.e Vec<1,2,3>)
+template<class DataTypes>
+void RestShapeSpringsForceField<DataTypes>::draw(const core::visual::VisualParams *vparams)
+{
+    if (!vparams->displayFlags().getShowForceFields() || !drawSpring.getValue())
+        return;  /// \todo put this in the parent class
+
+    if(DataTypes::spatial_dimensions > 3)
+    {
+        serr << "Draw function not implemented for this DataType" << sendl;
+        return;
+    }
+
+    vparams->drawTool()->saveLastState();
+    vparams->drawTool()->setLightingEnabled(false);
+
+    sofa::helper::ReadAccessor< DataVecCoord > p0 = *getExtPosition();
+
+    sofa::helper::ReadAccessor< DataVecCoord > p = this->mstate->read(core::VecCoordId::position());
+
+    const VecIndex& indices = m_indices;
+    const VecIndex& ext_indices = (useRestMState ? m_ext_indices : m_indices);
+
+    sofa::helper::vector<sofa::defaulttype::Vector3> vertices;
+
+    for (unsigned int i=0; i<indices.size(); i++)
+    {
+        const unsigned int index = indices[i];
+        const unsigned int ext_index = ext_indices[i];
+
+        sofa::defaulttype::Vector3 v0(0.0, 0.0, 0.0);
+        sofa::defaulttype::Vector3 v1(0.0, 0.0, 0.0);
+        for(unsigned int j=0 ; j<DataTypes::spatial_dimensions ; j++)
+        {
+            v0[j] = p[index][j];
+            v1[j] = p0[ext_index][j];
+        }
+
+        vertices.push_back(v0);
+        vertices.push_back(v1);
+    }
+    vparams->drawTool()->drawLines(vertices,5,springColor.getValue());
+
+    vparams->drawTool()->restoreLastState();
 }
 
 
