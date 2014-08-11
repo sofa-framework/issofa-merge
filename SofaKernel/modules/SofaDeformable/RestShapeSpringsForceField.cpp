@@ -22,11 +22,8 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COMPONENT_FORCEFIELD_RESTSHAPESPRINGSFORCEFIELD_CPP
-
 #include <SofaDeformable/RestShapeSpringsForceField.inl>
 
-#include <sofa/core/visual/DrawTool.h>
 #include <sofa/core/ObjectFactory.h>
 
 namespace sofa
@@ -40,12 +37,6 @@ namespace forcefield
 
 using namespace sofa::defaulttype;
 
-
-SOFA_DECL_CLASS(RestShapeSpringsForceField)
-
-///////////// SPECIALIZATION FOR RIGID TYPES //////////////
-
-
 #ifndef SOFA_FLOAT
 
 template<>
@@ -56,10 +47,7 @@ void RestShapeSpringsForceField<Rigid3dTypes>::addForce(const core::MechanicalPa
 
     sofa::helper::ReadAccessor< DataVecCoord > p0 = *getExtPosition();
 
-    //std::cout<<"addForce with p_0 ="<<p0<<std::endl;
-
     f1.resize(p1.size());
-    //std::cout<<" size p1:"<<p1.size()<<std::endl;
 
     if (recompute_indices.getValue())
     {
@@ -71,7 +59,6 @@ void RestShapeSpringsForceField<Rigid3dTypes>::addForce(const core::MechanicalPa
 
     for (unsigned int i = 0; i < m_indices.size(); i++)
     {
-        //std::cout<<"i="<<i<<std::endl;
         const unsigned int index = m_indices[i];
         unsigned int ext_index = m_indices[i];
         if(useRestMState)
@@ -81,20 +68,15 @@ void RestShapeSpringsForceField<Rigid3dTypes>::addForce(const core::MechanicalPa
         if (i >= m_pivots.size())
         {
             Vec3d dx = p1[index].getCenter() - p0[ext_index].getCenter();
-            //std::cout<<"dx = "<< dx <<std::endl;
             getVCenter(f1[index]) -=  dx * (i < k.size() ? k[i] : k[0]) ;
         }
         else
         {
             CPos localPivot = p0[ext_index].getOrientation().inverseRotate(m_pivots[i] - p0[ext_index].getCenter());
-            //std::cout << "localPivot = " << localPivot << std::endl;
             CPos rotatedPivot = p1[index].getOrientation().rotate(localPivot);
             CPos pivot2 = p1[index].getCenter() + rotatedPivot;
             CPos dx = pivot2 - m_pivots[i];
-            //std::cout << "dx = " << dx << std::endl;
             getVCenter(f1[index]) -= dx * (i < k.size() ? k[i] : k[0]) ;
-
-            //getVOrientation(f1[index]) -= cross(rotatedPivot, dx * k[i]);
         }
 
         // rotation
@@ -105,24 +87,15 @@ void RestShapeSpringsForceField<Rigid3dTypes>::addForce(const core::MechanicalPa
 
         if (dq[3] < 0)
         {
-            //std::cout<<"WARNING inversion quaternion"<<std::endl;
+            // WARNING inversion quaternion
             dq = dq * -1.0;
         }
 
         if (dq[3] < 0.999999999999999)
             dq.quatToAxis(dir, angle);
 
-        //std::cout<<"dq : "<<dq <<"  dir :"<<dir<<"  angle :"<<angle<<"  index : "<<index<<"  f1.size() : "<<f1.size()<<std::endl;
-        //Vec3d m1 = getVOrientation(f1[index]) ;
-        //std::cout<<"m1 = "<<m1<<std::endl;
-
-
         getVOrientation(f1[index]) -= dir * angle * (i < k_a.size() ? k_a[i] : k_a[0]);
-        //std::cout<<"dq : "<<dq <<"  dir :"<<dir<<"  angle :"<<angle<<std::endl;
-
     }
-
-    //std::cout<<" f1 = "<<f1<<std::endl;
 }
 
 
@@ -176,20 +149,6 @@ void RestShapeSpringsForceField<Rigid3dTypes>::addKToMatrix(const core::Mechanic
             mat->add(offset + N * curIndex + i, offset + N * curIndex + i, -kFact * (index < k_a.size() ? k_a[index] : k_a[0]));
         }
     }
-
-    /* debug
-    std::cout<<"MAT obtained : size: ("<<mat->rowSize()<<" * "<<mat->colSize()<<")\n"<<std::endl;
-
-    for (unsigned int col=0; col<mat->colSize(); col++)
-    {
-        for (unsigned int row=0; row<mat->rowSize(); row++)
-        {
-                std::cout<<" "<<mat->element(row, col);
-        }
-
-        std::cout<<""<<std::endl;
-    }
-    */
 }
 
 
@@ -233,7 +192,6 @@ void RestShapeSpringsForceField<Rigid3fTypes>::addForce(const core::MechanicalPa
             dq.quatToAxis(dir, angle);
         dq.quatToAxis(dir, angle);
 
-        //std::cout<<"dq : "<<dq <<"  dir :"<<dir<<"  angle :"<<angle<<std::endl;
         getVOrientation(f1[index]) -= dir * angle * (i < k_a.size() ? k_a[i] : k_a[0]) ;
     }
 }
@@ -253,8 +211,7 @@ void RestShapeSpringsForceField<Rigid3fTypes>::addDForce(const core::MechanicalP
 
     for (unsigned int i=0; i<m_indices.size(); i++)
     {
-//		curIndex = m_indices[index];
-        curIndex = m_indices[i];  // Fix by FF, just a guess
+        curIndex = m_indices[i];
         getVCenter(df1[curIndex])      -=  getVCenter(dx1[curIndex])      * (i < k.size() ? k[i] : k[0])   * kFactor ;
         getVOrientation(df1[curIndex]) -=  getVOrientation(dx1[curIndex]) * (i < k_a.size() ? k_a[i] : k_a[0]) * kFactor ;
     }
@@ -296,6 +253,7 @@ void RestShapeSpringsForceField<Rigid3fTypes>::addKToMatrix(const core::Mechanic
 
 #endif // SOFA_DOUBLE
 
+SOFA_DECL_CLASS(RestShapeSpringsForceField)
 
 int RestShapeSpringsForceFieldClass = core::RegisterObject("Simple elastic springs applied to given degrees of freedom between their current and rest shape position")
 #ifndef SOFA_FLOAT

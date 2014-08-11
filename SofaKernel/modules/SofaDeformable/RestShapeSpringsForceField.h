@@ -85,15 +85,19 @@ public:
     Data< std::string > external_rest_shape;
     Data< helper::vector< unsigned int > > external_points;
     Data< bool > recompute_indices;
-    Data< bool > drawSpring;
-    Data< sofa::defaulttype::Vec4f > springColor;
+    
+    Data< bool > d_drawSpring;
+    Data< Real > d_drawSpringLengthThreshold;
+    Data< sofa::defaulttype::Vec4f > d_springColor;
+    Data< sofa::defaulttype::Vec4f > d_springSphereColor;
+    Data< Real > d_springSphereRadius;
 
     sofa::core::behavior::MechanicalState< DataTypes > *restMState;
     linearsolver::EigenBaseSparseMatrix<typename DataTypes::Real> matS;
 
-    //VecDeriv Springs_dir;
 protected:
     RestShapeSpringsForceField();
+
 public:
     /// BaseObject initialization method.
     void bwdInit();
@@ -141,7 +145,7 @@ private :
     bool useRestMState; /// An external MechanicalState is used as rest reference.
 };
 
-#if defined(SOFA_EXTERN_TEMPLATE) && !defined(SOFA_COMPONENT_FORCEFIELD_RESTSHAPESPRINGSFORCEFIELD_CPP)
+#if defined(SOFA_EXTERN_TEMPLATE) && !defined(SOFA_BUILD_DEFORMABLE)
 
 #ifndef SOFA_FLOAT
 extern template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<sofa::defaulttype::Vec3dTypes>;

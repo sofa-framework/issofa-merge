@@ -26,11 +26,13 @@
 #define SOFA_COMPONENT_FORCEFIELD_RESTSHAPESPRINGFORCEFIELD_INL
 
 #include "RestShapeSpringsForceField.h"
+#include <sofa/core/behavior/ForceField.inl>
+
 #include <sofa/core/visual/VisualParams.h>
-#include <sofa/helper/system/config.h>
+
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
-#include <sofa/helper/gl/template.h>
+
 #include <assert.h>
 #include <iostream>
 
@@ -53,10 +55,11 @@ RestShapeSpringsForceField<DataTypes>::RestShapeSpringsForceField()
     , external_rest_shape(initData(&external_rest_shape, "external_rest_shape", "rest_shape can be defined by the position of an external Mechanical State"))
     , external_points(initData(&external_points, "external_points", "points from the external Mechancial State that define the rest shape springs"))
     , recompute_indices(initData(&recompute_indices, true, "recompute_indices", "Recompute indices (should be false for BBOX)"))
-    , drawSpring(initData(&drawSpring,false,"drawSpring","draw Spring"))
-    , springColor(initData(&springColor, sofa::defaulttype::Vec4f(0.f,1.f,0.f,1.f), "springColor", "spring color"))
+    , d_drawSpring(initData(&d_drawSpring, false, "drawSpring", "draw Spring"))
+    , d_drawSpringLengthThreshold(initData(&d_drawSpringLengthThreshold, (Real)0.1, "drawSpringLengthThreshold", "Display : When spring length is under this threshold a sphere is displayed instead of a line"))
+    , d_springColor(initData(&d_springColor, sofa::defaulttype::Vec4f(0.f,1.f,0.f,1.f), "springColor", "Display : spring color"))
+    , d_springSphereRadius(initData(&d_springSphereRadius, (Real)0.2, "springSphereRadius", "Display : spring sphere radius (used when springs are used as fixed constraint)"))
     , restMState(NULL)
-//	, pp_0(NULL)
 {    
 }
 
@@ -96,8 +99,6 @@ void RestShapeSpringsForceField<DataTypes>::bwdInit()
     else
     {
         useRestMState = true;
-
-        // sout << "RestShapeSpringsForceField : Mechanical state named " << restMState->getName() << " found for RestShapeSpringFF named " << this->getName() << sendl;
     }
 
     this->k = stiffness.getValue();
@@ -140,7 +141,7 @@ void RestShapeSpringsForceField<DataTypes>::recomputeIndices()
 
     if (m_indices.size()==0)
     {
-       // sout << "in RestShapeSpringsForceField no point are defined, default case: points = all points " << sendl;
+        // no point are defined, default case: points = all points
 
         for (unsigned int i = 0; i < (unsigned)this->mstate->getSize(); i++)
         {
@@ -150,7 +151,7 @@ void RestShapeSpringsForceField<DataTypes>::recomputeIndices()
 
     if (m_ext_indices.size()==0)
     {
-        // std::cout << "in RestShapeSpringsForceField no external_points are defined, default case: points = all points " << std::endl;
+        // no external_points are defined, default case: points = all points
 
         if (useRestMState)
         {
@@ -196,10 +197,9 @@ void RestShapeSpringsForceField<DataTypes>::addForce(const core::MechanicalParam
         recomputeIndices();
     }
 
-    //Springs_dir.resize(m_indices.size() );
     if ( k.size()!= m_indices.size() )
     {
-        //sout << "WARNING : stiffness is not defined on each point, first stiffness is used" << sendl;
+        // Stiffness is not defined on each point, first stiffness is used
         const Real k0 = k[0];
 
         for (unsigned int i=0; i<m_indices.size(); i++)
@@ -211,16 +211,8 @@ void RestShapeSpringsForceField<DataTypes>::addForce(const core::MechanicalParam
                 ext_index= m_ext_indices[i];
 
             Deriv dx = p1[index] - p0[ext_index];
-            //Springs_dir[i] = p1[index] - p0[ext_index];
-            //Springs_dir[i].normalize();
             f1[index] -=  dx * k0 ;
-
-            //	if (dx.norm()>0.00000001)
-            //		std::cout<<"force on point "<<index<<std::endl;
-
-            //	Deriv dx = p[i] - p_0[i];
-            //	f[ indices[i] ] -=  dx * k[0] ;
-        }
+      }
     }
     else
     {
@@ -232,15 +224,7 @@ void RestShapeSpringsForceField<DataTypes>::addForce(const core::MechanicalParam
                 ext_index= m_ext_indices[i];
 
             Deriv dx = p1[index] - p0[ext_index];
-            //Springs_dir[i] = p1[index] - p0[ext_index];
-            //Springs_dir[i].normalize();
             f1[index] -=  dx * k[i];
-
-            //	if (dx.norm()>0.00000001)
-            //		std::cout<<"force on point "<<index<<std::endl;
-
-            //	Deriv dx = p[i] - p_0[i];
-            //	f[ indices[i] ] -=  dx * k[i] ;
         }
     }
 }
@@ -249,17 +233,13 @@ void RestShapeSpringsForceField<DataTypes>::addForce(const core::MechanicalParam
 template<class DataTypes>
 void RestShapeSpringsForceField<DataTypes>::addDForce(const core::MechanicalParams* mparams, DataVecDeriv& df, const DataVecDeriv& dx)
 {
-    //  remove to be able to build in parallel
-    // 	const VecIndex& indices = points.getValue();
-    // 	const VecReal& k = stiffness.getValue();
-
     sofa::helper::WriteAccessor< DataVecDeriv > df1 = df;
     sofa::helper::ReadAccessor< DataVecDeriv > dx1 = dx;
     Real kFactor = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 
     if (k.size()!= m_indices.size() )
     {
-        //sout << "WARNING : stiffness is not defined on each point, first stiffness is used" << sendl;
+        // Stiffness is not defined on each point, first stiffness is used
         const Real k0 = k[0];
 
         for (unsigned int i=0; i<m_indices.size(); i++)
@@ -280,9 +260,6 @@ void RestShapeSpringsForceField<DataTypes>::addDForce(const core::MechanicalPara
 template<class DataTypes>
 void RestShapeSpringsForceField<DataTypes>::addKToMatrix(const core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix )
 {
-    //      remove to be able to build in parallel
-    // 	const VecIndex& indices = points.getValue();
-    // 	const VecReal& k = stiffness.getValue();   
     sofa::core::behavior::MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
     sofa::defaulttype::BaseMatrix* mat = mref.matrix;
     unsigned int offset = mref.offset;
@@ -301,70 +278,6 @@ void RestShapeSpringsForceField<DataTypes>::addKToMatrix(const core::MechanicalP
 
             for(int i = 0; i < N; i++)
             {
-
-                //	for (unsigned int j = 0; j < N; j++)
-                //	{
-                //		mat->add(offset + N * curIndex + i, offset + N * curIndex + j, kFact * k[0]);
-                //	}
-
-                mat->add(offset + N * curIndex + i, offset + N * curIndex + i, -kFact * k0);                
-            }
-        }
-    }
-    else
-    {
-        for (unsigned int index = 0; index < m_indices.size(); index++)
-        {
-            curIndex = m_indices[index];
-
-            for(int i = 0; i < N; i++)
-            {
-
-                //	for (unsigned int j = 0; j < N; j++)
-                //	{
-                //		mat->add(offset + N * curIndex + i, offset + N * curIndex + j, kFact * k[curIndex]);
-                //	}
-
-                mat->add(offset + N * curIndex + i, offset + N * curIndex + i, -kFact * k[index]);
-            }
-        }
-    }
-}
-
-template<class DataTypes>
-void RestShapeSpringsForceField<DataTypes>::addSubKToMatrix(const core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix, const helper::vector<unsigned> & addSubIndex )
-{
-    //      remove to be able to build in parallel
-    // 	const VecIndex& indices = points.getValue();
-    // 	const VecReal& k = stiffness.getValue();
-    sofa::core::behavior::MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
-    sofa::defaulttype::BaseMatrix* mat = mref.matrix;
-    unsigned int offset = mref.offset;
-    Real kFact = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
-
-    const int N = Coord::total_size;
-
-    unsigned int curIndex = 0;
-
-    if (k.size()!= m_indices.size() )
-    {
-        const Real k0 = k[0];
-        for (unsigned int index = 0; index < m_indices.size(); index++)
-        {
-            curIndex = m_indices[index];
-
-            bool contains=false;
-            for (unsigned s=0;s<addSubIndex.size() && !contains;s++) if (curIndex==addSubIndex[s]) contains=true;
-            if (!contains) continue;
-
-            for(int i = 0; i < N; i++)
-            {
-
-                //	for (unsigned int j = 0; j < N; j++)
-                //	{
-                //		mat->add(offset + N * curIndex + i, offset + N * curIndex + j, kFact * k[0]);
-                //	}
-
                 mat->add(offset + N * curIndex + i, offset + N * curIndex + i, -kFact * k0);
             }
         }
@@ -375,18 +288,53 @@ void RestShapeSpringsForceField<DataTypes>::addSubKToMatrix(const core::Mechanic
         {
             curIndex = m_indices[index];
 
-            bool contains=false;
-            for (unsigned s=0;s<addSubIndex.size() && !contains;s++) if (curIndex==addSubIndex[s]) contains=true;
-            if (!contains) continue;
+            for(int i = 0; i < N; i++)
+            {
+                mat->add(offset + N * curIndex + i, offset + N * curIndex + i, -kFact * k[index]);
+            }
+        }
+    }
+}
+
+template<class DataTypes>
+void RestShapeSpringsForceField<DataTypes>::addSubKToMatrix(const core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix, const helper::vector<unsigned> & addSubIndex )
+{
+    sofa::core::behavior::MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
+    sofa::defaulttype::BaseMatrix* mat = mref.matrix;
+    unsigned int offset = mref.offset;
+    Real kFact = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
+
+    const int N = Coord::total_size;
+
+    unsigned int curIndex = 0;
+
+    if (k.size()!= m_indices.size() )
+    {
+        const Real k0 = k[0];
+        for (unsigned int index = 0; index < m_indices.size(); index++)
+        {
+            curIndex = m_indices[index];
+
+            if (std::find(addSubIndex.begin(), addSubIndex.end(), curIndex) == addSubIndex.end())
+                continue;
 
             for(int i = 0; i < N; i++)
             {
+                mat->add(offset + N * curIndex + i, offset + N * curIndex + i, -kFact * k0);
+            }
+        }
+    }
+    else
+    {
+        for (unsigned int index = 0; index < m_indices.size(); index++)
+        {
+            curIndex = m_indices[index];
 
-                //	for (unsigned int j = 0; j < N; j++)
-                //	{
-                //		mat->add(offset + N * curIndex + i, offset + N * curIndex + j, kFact * k[curIndex]);
-                //	}
+            if (std::find(addSubIndex.begin(), addSubIndex.end(), curIndex) == addSubIndex.end())
+                continue;
 
+            for(int i = 0; i < N; i++)
+            {
                 mat->add(offset + N * curIndex + i, offset + N * curIndex + i, -kFact * k[index]);
             }
         }
@@ -398,7 +346,7 @@ void RestShapeSpringsForceField<DataTypes>::addSubKToMatrix(const core::Mechanic
 template<class DataTypes>
 void RestShapeSpringsForceField<DataTypes>::draw(const core::visual::VisualParams *vparams)
 {
-    if (!vparams->displayFlags().getShowForceFields() || !drawSpring.getValue())
+    if (!vparams->displayFlags().getShowForceFields() || !d_drawSpring.getValue())
         return;  /// \todo put this in the parent class
 
     if(DataTypes::spatial_dimensions > 3)
@@ -411,12 +359,12 @@ void RestShapeSpringsForceField<DataTypes>::draw(const core::visual::VisualParam
     vparams->drawTool()->setLightingEnabled(false);
 
     sofa::helper::ReadAccessor< DataVecCoord > p0 = *getExtPosition();
-
     sofa::helper::ReadAccessor< DataVecCoord > p = this->mstate->read(core::VecCoordId::position());
 
     const VecIndex& indices = m_indices;
     const VecIndex& ext_indices = (useRestMState ? m_ext_indices : m_indices);
 
+    sofa::helper::vector<sofa::defaulttype::Vector3> lines;
     sofa::helper::vector<sofa::defaulttype::Vector3> vertices;
 
     for (unsigned int i=0; i<indices.size(); i++)
@@ -432,10 +380,19 @@ void RestShapeSpringsForceField<DataTypes>::draw(const core::visual::VisualParam
             v1[j] = p0[ext_index][j];
         }
 
-        vertices.push_back(v0);
-        vertices.push_back(v1);
+        if ((v1-v0).norm() > d_drawSpringLengthThreshold.getValue())
+        {
+            lines.push_back(v0);
+            lines.push_back(v1);
+        }
+        else
+        {
+            vertices.push_back(v0);
+        }
     }
-    vparams->drawTool()->drawLines(vertices,5,springColor.getValue());
+
+    vparams->drawTool()->drawLines(lines, 5.f, d_springColor.getValue());
+    vparams->drawTool()->drawSpheres(vertices, (float)d_springSphereRadius.getValue(), d_springSphereColor.getValue());
 
     vparams->drawTool()->restoreLastState();
 }
