@@ -55,6 +55,43 @@ bool derivVectors(const typename DataTypes::VecCoord& x0, const typename DataTyp
     return true;
 }
 
+//template<class Real>
+//sofa::defaulttype::Vec<3,Real> getLog(Quat &q)
+//{
+//    q.normalize();
+//
+//    sofa::defaulttype::Vec<3,Real> v(q[0], q[1], q[2]);
+//
+//    double norm = sqrt( (double) (v.x() * v.x() + v.y() * v.y() + v.z() * v.z()) );
+//    const double normThreshold = 1e-8;
+//
+//
+//    if (norm < 0.000001)
+//        return v;
+//
+//    if (q[3] > 0.999)
+//    {
+//         v *= 2.0;
+//    }
+//    else if (q[3] < -0.999)
+//    {
+//        v *= -2.0;
+//    }
+//    else
+//    {
+//        double angle = q[3] > 0 ? acos(q[3]) * 2 : acos(-q[3]) * -2;
+//        v *= angle / norm;
+//    }
+//
+//    return v;
+//}
+
+//template<class Real>
+//sofa::defaulttype::Vec<3,Real> angularDisplacement(Quat a, const Quat& b)
+//{
+//    Quat q;
+//    return getLog<Real>(q.quatDiff(a, b));
+//}
 
 template <typename DataTypes>
 bool derivRigid3Vectors(const typename DataTypes::VecCoord& x0, const typename DataTypes::VecCoord& x1, typename DataTypes::VecDeriv& d, bool derivRotation=false)
@@ -71,6 +108,7 @@ bool derivRigid3Vectors(const typename DataTypes::VecCoord& x0, const typename D
             // rotations are taken into account to compute the violations
             sofa::defaulttype::Quat q;
             getVOrientation(d[i]) = x0[i].rotate(q.angularDisplacement(x1[i].getOrientation(), x0[i].getOrientation() ) ); // angularDisplacement compute the rotation vector btw the two quaternions
+            // getVOrientation(d[i]) = x0[i].rotate(angularDisplacement<DataTypes::Real>(x1[i].getOrientation(), x0[i].getOrientation() ) );
         }
         else
             getVOrientation(d[i]) *= 0; 
@@ -89,7 +127,7 @@ bool derivRigid3Vectors(const typename DataTypes::VecCoord& x0, const typename D
                                                                                 // correction of the toEulerVector  function). If the
                                                                                 // purpose was to obtain the Eulerian vector and not the
                                                                                 // rotation vector please use the following line instead
-//            getVOrientation(d[i]) = -x0[i].rotate( q.toEulerVector() );
+//            getVOrientation(d[i]) = -x0[i].rotate( q.getLog() );
         }
         else
             getVOrientation(d[i]) *= 0;
@@ -249,6 +287,11 @@ void LCPForceFeedback<DataTypes>::computeForce(const VecCoord& state,  VecDeriv&
         mIsCuBufferInUse = false;
         return;
     }
+
+    /*VecDeriv dx;
+    derivVectors< DataTypes >(val, state, dx, d_derivRotations.getValue());
+    m_dxRotation = dx[0];
+    m_valRotation = val[0];*/
 
     if(!constraints.empty())
     {

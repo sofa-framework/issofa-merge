@@ -100,7 +100,7 @@ void FrameSpringForceField<DataTypes>::addSpringForce ( SReal& /*potentialEnergy
                                                                                                                         // correction of the toEulerVector  function). If the
                                                                                                                         // purpose was to obtain the Eulerian vector and not the
                                                                                                                         // rotation vector please use the following line instead
-    //VecN fR = ksr.linearProduct( ( p1[a].getOrientation().inverse() * p2[b].getOrientation()).toEulerVector());
+    //VecN fR = ksr.linearProduct( ( p1[a].getOrientation().inverse() * p2[b].getOrientation()).getLog());
 
     VecN C1 = fR + cross( Mr01 * ( spring.vec1), fT) + damping.linearProduct ( getVOrientation(Vp1p2) );
     VecN C2 = fR + cross( Mr02 * ( spring.vec2), fT) + damping.linearProduct ( -getVOrientation(Vp1p2) );

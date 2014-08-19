@@ -177,11 +177,13 @@ public:
 
     Quater inverse() const;
 
-
-    defaulttype::Vec<3,Real> quatToRotationVector() const;
-
+    /// @deprecated
     defaulttype::Vec<3,Real> toEulerVector() const;
 
+    ///< Returns the logarithm of the input quaternion
+    defaulttype::Vec<3,Real> getLog() const;
+
+    defaulttype::Vec<3,Real> quatToRotationVector() const;
 
     /*! Returns the slerp interpolation of Quaternions \p a and \p b, at time \p t.
 
