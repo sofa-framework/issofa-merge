@@ -52,8 +52,6 @@
 #include <SofaBaseTopology/TopologyData.h>
 #include <SofaEigen2Solver/EigenSparseMatrix.h>
 
-#define LOCAL_OPTIM
-
 namespace sofa
 {
 
@@ -96,6 +94,8 @@ public:
 
     Data<SReal> f_bendingStiffness;  ///< Material parameter
     Data<SReal> d_minDistValidity; ///< Minimal distance to consider a spring valid
+
+    Data<bool>   d_useOldAddForce; //warning: bug version
 
 
     /// Searches triangle topology and creates the bending springs
@@ -174,37 +174,29 @@ protected:
             return R * R * lambda * (Real)0.5;
         }
 
-#ifdef LOCAL_OPTIM
-        // Optimized version of addDForce
-        void addDForce( VecDeriv& df, const VecDeriv& dp, Real kfactor) const
+        void addDForceBugged( VecDeriv& df, const VecDeriv& dp, Real kfactor) const
         {
             using namespace sofa::component::topology;
             if( !is_activated ) return;
 
-            Deriv dpKfact[4];
-
-            dpKfact[0] = dp[vid[0]] * lambda * kfactor * alpha[0];
-            dpKfact[1] = dp[vid[1]] * lambda * kfactor * alpha[1];
-            dpKfact[2] = dp[vid[2]] * lambda * kfactor * alpha[2];
-            dpKfact[3] = dp[vid[3]] * lambda * kfactor * alpha[3];
-
-            for( unsigned j=0; j<4; ++j)
-            {
-                for( unsigned k=0; k<4; ++k)
-                {
-                    df[vid[j]] -= dpKfact[k] * alpha[j];
-                }
-            }
+            Deriv R = (dp[vid[0]] * (kfactor *  alpha[0]) + dp[vid[1]] * (kfactor * alpha[1]) + dp[vid[2]] * (kfactor * alpha[2]) + dp[vid[3]] * (kfactor * alpha[3]));
+            df[vid[0]] -= R*alpha[0];
+            df[vid[1]] -= R*alpha[1];
+            df[vid[2]] -= R*alpha[2];
+            df[vid[3]] -= R*alpha[3];
         }
-#else
+
+        // Optimized version of addDForce
         void addDForce( VecDeriv& df, const VecDeriv& dp, Real kfactor) const
         {
-	        if( !is_activated ) return;
-	        for( unsigned j=0; j<4; j++ )
-	            for( unsigned k=0; k<4; k++ )
-	                df[vid[j]] -= dp[vid[k]] * lambda * alpha[j] * alpha[k] * kfactor;
+            if( !is_activated ) return;
+
+            Deriv R = (dp[vid[0]] * (kfactor *  alpha[0]) + dp[vid[1]] * (kfactor * alpha[1]) + dp[vid[2]] * (kfactor * alpha[2]) + dp[vid[3]] * (kfactor * alpha[3]))*lambda;
+            df[vid[0]] -= R*alpha[0];
+            df[vid[1]] -= R*alpha[1];
+            df[vid[2]] -= R*alpha[2];
+            df[vid[3]] -= R*alpha[3];
         }
-#endif
 
         /// Stiffness matrix assembly
         void addStiffness( sofa::defaulttype::BaseMatrix *bm, unsigned int offset, SReal scale, core::behavior::ForceField< _DataTypes>* ff ) const

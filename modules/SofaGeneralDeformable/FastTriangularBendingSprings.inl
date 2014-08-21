@@ -24,6 +24,7 @@
 ******************************************************************************/
 //
 // C++ Implementation: FastTriangularBendingSprings
+
 //
 // Description:
 //
@@ -45,6 +46,8 @@
 #include <sofa/helper/gl/template.h>
 #include <SofaBaseTopology/TopologyData.inl>
 
+#include <sofa/helper/AdvancedTimer.h>
+
 namespace sofa
 {
 
@@ -56,7 +59,7 @@ namespace forcefield
 typedef core::topology::BaseMeshTopology::EdgesInTriangle EdgesInTriangle;
 
 template< class DataTypes>
-void FastTriangularBendingSprings<DataTypes>::TriangularBSEdgeHandler::applyCreateFunction(unsigned int /*edgeIndex*/, EdgeSpring &ei, const core::topology::BaseMeshTopology::Edge &, const sofa::helper::vector<unsigned int> &, const sofa::helper::vector<double> &)
+void FastTriangularBendingSprings<DataTypes>::TriangularBSEdgeHandler::applyCreateFunction(unsigned int edgeIndex, EdgeSpring &ei, const core::topology::BaseMeshTopology::Edge &, const sofa::helper::vector<unsigned int> &, const sofa::helper::vector<double> &)
 {
     if (ff)
     {
@@ -299,6 +302,8 @@ void FastTriangularBendingSprings<DataTypes>::TriangularBSEdgeHandler::applyPoin
             const sofa::helper::vector<unsigned int> &shell= ff->_topology->getTrianglesAroundVertex(lastIndexVec[i]);
             for (j=0; j<shell.size(); ++j)
             {
+                Triangle tj = ff->_topology->getTriangle(shell[j]);
+
                 core::topology::BaseMeshTopology::EdgesInTriangle tej = ff->_topology->getEdgesInTriangle(shell[j]);
                 for(unsigned int k=0; k < 3 ; ++k)
                 {
@@ -360,6 +365,8 @@ FastTriangularBendingSprings<DataTypes>::FastTriangularBendingSprings(/*double _
     , d_minDistValidity(initData(&d_minDistValidity,(SReal) 0.000001,"minDistValidity","Distance under which a spring is not valid"))
     , edgeSprings(initData(&edgeSprings, "edgeInfo", "Internal edge data"))
     , edgeHandler(NULL)
+	, d_minDistValidity(initData(&d_minDistValidity,(double) 0.000001,"minDistValidity","Distance under which a spring is not valid"))
+    , d_useOldAddForce(initData(&d_useOldAddForce, false,"useOldAddForce","Use old version of addForce"))
 {
     // Create specific handler for EdgeData
     edgeHandler = new TriangularBSEdgeHandler(this, &edgeSprings);
@@ -442,6 +449,7 @@ void FastTriangularBendingSprings<DataTypes>::addForce(const core::MechanicalPar
     f.resize(x.size());
 
     m_potentialEnergy = 0;
+
     for(unsigned i=0; i<edgeInf.size(); i++ )
     {
         m_potentialEnergy += edgeInf[i].addForce(f.wref(),x,v);
@@ -454,12 +462,27 @@ void FastTriangularBendingSprings<DataTypes>::addDForce(const core::MechanicalPa
     const VecDeriv& dx = d_dx.getValue();
     typename MechanicalState::WriteVecDeriv df(d_df);
     const helper::vector<EdgeSpring>& edgeInf = edgeSprings.getValue();
-    const Real kFactor = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
+    const Real kFactor = (Real)mparams->kFactor();
     df.resize(dx.size());
-    for(unsigned i=0; i<edgeInf.size(); i++ )
+
+    sofa::helper::AdvancedTimer::stepBegin("FTBendingSpringAddDForce");
+
+    if(d_useOldAddForce.getValue())
     {
-        edgeInf[i].addDForce(df.wref(),dx,kFactor);
+        for(unsigned i=0; i<edgeInf.size(); i++ )
+        {
+            edgeInf[i].addDForceBugged(df.wref(),dx,kFactor);
+        }
     }
+    else
+    {
+        for(unsigned i=0; i<edgeInf.size(); i++ )
+        {
+            edgeInf[i].addDForce(df.wref(),dx,kFactor);
+        }
+    }
+
+    sofa::helper::AdvancedTimer::stepEnd("FTBendingSpringAddDForce");
 }
 
 
@@ -472,8 +495,6 @@ void FastTriangularBendingSprings<DataTypes>::addKToMatrix(sofa::defaulttype::Ba
         springs[i].addStiffness( mat, offset, scale, this);
     }
 }
-
-
 
 
 template<class DataTypes>
