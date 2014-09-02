@@ -74,6 +74,11 @@ public:
     Data< defaulttype::Vec4f > d_color;
     /// Concerned DOFs indices are numbered from the end of the MState DOFs vector
     Data< bool > indexFromEnd;
+    /// Start of time which the force is activated
+	Data< double > startTime;
+    /// End of time which the force is activated
+	Data< double > endTime;
+
 protected:
     ConstantForceField();
 public:

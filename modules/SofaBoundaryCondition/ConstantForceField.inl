@@ -54,6 +54,8 @@ ConstantForceField<DataTypes>::ConstantForceField()
     , arrowSizeCoef(initData(&arrowSizeCoef,(SReal)0.0, "arrowSizeCoef", "Size of the drawn arrows (0->no arrows, sign->direction of drawing"))
     , d_color(initData(&d_color, defaulttype::Vec4f(0.2f,0.9f,0.3f,1.0f), "showColor", "Color for object display"))
     , indexFromEnd(initData(&indexFromEnd,(bool)false,"indexFromEnd", "Concerned DOFs indices are numbered from the end of the MState DOFs vector"))
+    , startTime(initData(&startTime, 0.0, "startTime", "Start of time which the force is activated"))
+    , endTime(initData(&endTime, std::numeric_limits<double>::max(), "endTime", "End of time which the force is activated"))
 {
     arrowSizeCoef.setGroup("Visualization");
     d_color.setGroup("Visualization");
@@ -80,49 +82,52 @@ void ConstantForceField<DataTypes>::addForce(const core::MechanicalParams* /*par
     sofa::helper::WriteAccessor< core::objectmodel::Data< VecDeriv > > _f1 = f1;
     _f1.resize(p1.getValue().size());
 
-    Deriv singleForce;
-    const Deriv& forceVal = force.getValue();
-    const Deriv& totalForceVal = totalForce.getValue();
-    const VecIndex& indices = points.getValue();
-    const VecDeriv& f = forces.getValue();
-    unsigned int i = 0, nbForcesIn = f.size(), nbForcesOut = _f1.size();
-
-    if (totalForceVal * totalForceVal > 0)
+    if(this->getContext()->getTime() > startTime.getValue() && this->getContext()->getTime() < endTime.getValue())
     {
-        unsigned int nbForces = indices.empty() ? nbForcesOut : indices.size();
-        singleForce = totalForceVal / (Real)nbForces;
-    }
-    else if (forceVal * forceVal > 0.0)
-        singleForce = forceVal;
+        Deriv singleForce;
+        const Deriv& forceVal = force.getValue();
+        const Deriv& totalForceVal = totalForce.getValue();
+        const VecIndex& indices = points.getValue();
+        const VecDeriv& f = forces.getValue();
+        unsigned int i = 0, nbForcesIn = f.size(), nbForcesOut = _f1.size();
 
-    const Deriv f_end = (f.empty() ? singleForce : f[f.size()-1]);
-
-    // When no indices are given, copy the forces from the start
-    if (indices.empty())
-    {
-        unsigned int nbCopy = std::min(nbForcesIn, nbForcesOut);
-        for (; i < nbCopy; ++i) // Copy from the forces list
-            _f1[i] += f[i];
-        for (; i < nbForcesOut; ++i) // Copy from the single value or the last value of the forces list
-            _f1[i] += f_end;
-    }
-    else
-    {
-        unsigned int nbIndices = indices.size();
-        unsigned int nbCopy = std::min(nbForcesIn, nbIndices); // forces & points are not garanteed to be of the same size
-        if (!indexFromEnd.getValue())
+        if (totalForceVal * totalForceVal > 0)
         {
-            for (; i < nbCopy; ++i)
-                _f1[indices[i]] += f[i];
-            for (; i < nbIndices; ++i)
-                _f1[indices[i]] += f_end;
+            unsigned int nbForces = indices.empty() ? nbForcesOut : indices.size();
+            singleForce = totalForceVal / (Real)nbForces;
+        }
+        else if (forceVal * forceVal > 0.0)
+            singleForce = forceVal;
+
+        const Deriv f_end = (f.empty() ? singleForce : f[f.size()-1]);
+
+        // When no indices are given, copy the forces from the start
+        if (indices.empty())
+        {
+            unsigned int nbCopy = std::min(nbForcesIn, nbForcesOut);
+            for (; i < nbCopy; ++i) // Copy from the forces list
+                _f1[i] += f[i];
+            for (; i < nbForcesOut; ++i) // Copy from the single value or the last value of the forces list
+                _f1[i] += f_end;
         }
         else
         {
-            for (; i < nbCopy; ++i)
-                _f1[nbForcesOut - indices[i] - 1] += f[i];
-            for (; i < nbIndices; ++i)
-                _f1[nbForcesOut - indices[i] - 1] += f_end;
+            unsigned int nbIndices = indices.size();
+            unsigned int nbCopy = std::min(nbForcesIn, nbIndices); // forces & points are not garanteed to be of the same size
+            if (!indexFromEnd.getValue())
+            {
+                for (; i < nbCopy; ++i)
+                    _f1[indices[i]] += f[i];
+                for (; i < nbIndices; ++i)
+                    _f1[indices[i]] += f_end;
+            }
+            else
+            {
+                for (; i < nbCopy; ++i)
+                    _f1[nbForcesOut - indices[i] - 1] += f[i];
+                for (; i < nbIndices; ++i)
+                    _f1[nbForcesOut - indices[i] - 1] += f_end;
+            }
         }
     }
 }
@@ -142,29 +147,33 @@ SReal ConstantForceField<DataTypes>::getPotentialEnergy(const core::MechanicalPa
     SReal e = 0;
     unsigned int i = 0;
 
-    if (!indexFromEnd.getValue())
+    if(this->getContext()->getTime() > startTime.getValue() && this->getContext()->getTime() < endTime.getValue())
     {
-        for (; i<f.size(); i++)
+        if (!indexFromEnd.getValue())
         {
-            e -= f[i] * _x[indices[i]];
+            for (; i<f.size(); i++)
+            {
+                e -= f[i] * _x[indices[i]];
+            }
+            for (; i<indices.size(); i++)
+            {
+                e -= f_end * _x[indices[i]];
+            }
         }
-        for (; i<indices.size(); i++)
+        else
         {
-            e -= f_end * _x[indices[i]];
+            for (; i < f.size(); i++)
+            {
+                e -= f[i] * _x[_x.size() - indices[i] -1];
+            }
+            for (; i < indices.size(); i++)
+            {
+                e -= f_end * _x[_x.size() - indices[i] -1];
+            }
         }
-    }
-    else
-    {
-        for (; i < f.size(); i++)
-        {
-            e -= f[i] * _x[_x.size() - indices[i] -1];
-        }
-        for (; i < indices.size(); i++)
-        {
-            e -= f_end * _x[_x.size() - indices[i] -1];
-        }
-    }
 
+    }
+    
     return e;
 }
 
@@ -207,60 +216,62 @@ void ConstantForceField<DataTypes>::draw(const core::visual::VisualParams* vpara
     const VecCoord& x = this->mstate->read(core::ConstVecCoordId::position())->getValue();
 
 
-
-    if( fabs(aSC)<1.0e-10 )
+    if( this->getContext()->getTime() > startTime.getValue() && this->getContext()->getTime() < endTime.getValue())
     {
-        std::vector<defaulttype::Vector3> points;
-        for (unsigned int i=0; i<indices.size(); i++)
+        if( fabs(aSC)<1.0e-10 )
         {
-            Real xx,xy,xz,fx,fy,fz;
-
-            if (!indexFromEnd.getValue())
+            std::vector<defaulttype::Vector3> points;
+            for (unsigned int i=0; i<indices.size(); i++)
             {
-                DataTypes::get(xx,xy,xz,x[indices[i]]);
-            }
-            else
-            {
-                DataTypes::get(xx,xy,xz,x[x.size() - indices[i] - 1]);
-            }
+                Real xx,xy,xz,fx,fy,fz;
 
-            DataTypes::get(fx,fy,fz,(i<f.size())? f[i] : f_end);
-            points.push_back(defaulttype::Vector3(xx, xy, xz ));
-            points.push_back(defaulttype::Vector3(xx+fx, xy+fy, xz+fz ));
+                if (!indexFromEnd.getValue())
+                {
+                    DataTypes::get(xx,xy,xz,x[indices[i]]);
+                }
+                else
+                {
+                    DataTypes::get(xx,xy,xz,x[x.size() - indices[i] - 1]);
+                }
+
+                DataTypes::get(fx,fy,fz,(i<f.size())? f[i] : f_end);
+                points.push_back(defaulttype::Vector3(xx, xy, xz ));
+                points.push_back(defaulttype::Vector3(xx+fx, xy+fy, xz+fz ));
+            }
+            vparams->drawTool()->drawLines(points, 2, defaulttype::Vec<4,float>(0,1,0,1));
         }
-        vparams->drawTool()->drawLines(points, 2, defaulttype::Vec<4,float>(0,1,0,1));
-    }
-    else
-    {
-
-        vparams->drawTool()->setLightingEnabled(true);
-        for (unsigned int i=0; i<indices.size(); i++)
+        else
         {
-            Real xx,xy,xz,fx,fy,fz;
 
-            if (!indexFromEnd.getValue())
+            vparams->drawTool()->setLightingEnabled(true);
+            for (unsigned int i=0; i<indices.size(); i++)
             {
-                DataTypes::get(xx,xy,xz,x[indices[i]]);
-            }
-            else
-            {
-                DataTypes::get(xx,xy,xz,x[x.size() - indices[i] - 1]);
-            }
+                Real xx,xy,xz,fx,fy,fz;
 
-            DataTypes::get(fx,fy,fz,(i<f.size())? f[i] : f_end);
+                if (!indexFromEnd.getValue())
+                {
+                    DataTypes::get(xx,xy,xz,x[indices[i]]);
+                }
+                else
+                {
+                    DataTypes::get(xx,xy,xz,x[x.size() - indices[i] - 1]);
+                }
 
-            defaulttype::Vector3 p1( xx, xy, xz);
-            defaulttype::Vector3 p2( aSC*fx+xx, aSC*fy+xy, aSC*fz+xz );
+                DataTypes::get(fx,fy,fz,(i<f.size())? f[i] : f_end);
 
-            float norm = (float)(p2-p1).norm();
+                defaulttype::Vector3 p1( xx, xy, xz);
+                defaulttype::Vector3 p2( aSC*fx+xx, aSC*fy+xy, aSC*fz+xz );
 
-            if( aSC > 0)
-            {
-                vparams->drawTool()->drawArrow(p1,p2, norm/20.0f, d_color.getValue());
-            }
-            else
-            {
-                vparams->drawTool()->drawArrow(p2,p1, norm/20.0f, d_color.getValue());
+                float norm = (float)(p2-p1).norm();
+
+                if( aSC > 0)
+                {
+                    vparams->drawTool()->drawArrow(p1,p2, norm/20.0f, d_color.getValue());
+                }
+                else
+                {
+                    vparams->drawTool()->drawArrow(p2,p1, norm/20.0f, d_color.getValue());
+                }
             }
         }
     }
