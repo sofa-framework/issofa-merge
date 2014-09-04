@@ -54,8 +54,10 @@ ConstantForceField<DataTypes>::ConstantForceField()
     , arrowSizeCoef(initData(&arrowSizeCoef,(SReal)0.0, "arrowSizeCoef", "Size of the drawn arrows (0->no arrows, sign->direction of drawing"))
     , d_color(initData(&d_color, defaulttype::Vec4f(0.2f,0.9f,0.3f,1.0f), "showColor", "Color for object display"))
     , indexFromEnd(initData(&indexFromEnd,(bool)false,"indexFromEnd", "Concerned DOFs indices are numbered from the end of the MState DOFs vector"))
-    , startTime(initData(&startTime, 0.0, "startTime", "Start of time which the force is activated"))
-    , endTime(initData(&endTime, std::numeric_limits<double>::max(), "endTime", "End of time which the force is activated"))
+    , d_handleTopologyChange(initData(&d_handleTopologyChange, true, "handleTopologyChange", "Enable support of topological changes for point indices (disable if another component takes care of this)"))
+    , d_startTime(initData(&d_startTime, 0.0, "startTime", "Start of time which the force is activated"))
+    , d_endTime(initData(&d_endTime, std::numeric_limits<double>::max(), "endTime", "End of time which the force is activated"))
+    , d_loopTime(initData(&d_loopTime, 0.0, "loopTime", "Time at which the time-based activation loops"))
 {
     arrowSizeCoef.setGroup("Visualization");
     d_color.setGroup("Visualization");
@@ -68,22 +70,38 @@ void ConstantForceField<DataTypes>::init()
 {
     topology = this->getContext()->getMeshTopology();
 
-    // Initialize functions and parameters for topology data and handler
-    points.createTopologicalEngine(topology);
-    points.registerTopologicalData();
+    if (d_handleTopologyChange.getValue())
+    {
+        // Initialize functions and parameters for topology data and handler
+        points.createTopologicalEngine(topology);
+        points.registerTopologicalData();
+    }
 
     Inherit::init();
 }
 
+template<class DataTypes>
+bool ConstantForceField<DataTypes>::isActive() const
+{
+    const double startTime = this->d_startTime.getValue();
+    const double endTime = this->d_endTime.getValue();
+    const double loopTime = this->d_loopTime.getValue();
+    double time = this->getContext()->getTime();
+    if (loopTime != 0)
+    {
+        time = fmod(time, loopTime);
+    }
+    return (time >= startTime && time < endTime);
+}
 
 template<class DataTypes>
 void ConstantForceField<DataTypes>::addForce(const core::MechanicalParams* /*params*/, DataVecDeriv& f1, const DataVecCoord& p1, const DataVecDeriv&)
 {
-    sofa::helper::WriteAccessor< core::objectmodel::Data< VecDeriv > > _f1 = f1;
-    _f1.resize(p1.getValue().size());
-
-    if(this->getContext()->getTime() > startTime.getValue() && this->getContext()->getTime() < endTime.getValue())
+    if (isActive())
     {
+        sofa::helper::WriteAccessor< core::objectmodel::Data< VecDeriv > > _f1 = f1;
+        _f1.resize(p1.getValue().size());
+
         Deriv singleForce;
         const Deriv& forceVal = force.getValue();
         const Deriv& totalForceVal = totalForce.getValue();
@@ -140,15 +158,15 @@ void ConstantForceField<DataTypes>::addKToMatrix(sofa::defaulttype::BaseMatrix *
 template <class DataTypes>
 SReal ConstantForceField<DataTypes>::getPotentialEnergy(const core::MechanicalParams* /*params*/, const DataVecCoord& x) const
 {
-    const VecIndex& indices = points.getValue();
-    const VecDeriv& f = forces.getValue();
-    const VecCoord& _x = x.getValue();
-    const Deriv f_end = (f.empty()? force.getValue() : f[f.size()-1]);
-    SReal e = 0;
-    unsigned int i = 0;
-
-    if(this->getContext()->getTime() > startTime.getValue() && this->getContext()->getTime() < endTime.getValue())
+    double e = 0;
+    if (isActive())
     {
+        const VecIndex& indices = points.getValue();
+        const VecDeriv& f = forces.getValue();
+        const VecCoord& _x = x.getValue();
+        const Deriv f_end = (f.empty()? force.getValue() : f[f.size()-1]);
+        unsigned int i = 0;
+
         if (!indexFromEnd.getValue())
         {
             for (; i<f.size(); i++)
@@ -194,6 +212,8 @@ void ConstantForceField<DataTypes>::setForce(unsigned i, const Deriv& force)
 template<class DataTypes>
 void ConstantForceField<DataTypes>::draw(const core::visual::VisualParams* vparams)
 {
+    if (!isActive()) return;
+
     vparams->drawTool()->saveLastState();
 
     SReal aSC = arrowSizeCoef.getValue();
@@ -215,8 +235,6 @@ void ConstantForceField<DataTypes>::draw(const core::visual::VisualParams* vpara
     const Deriv f_end = (f.empty()? singleForce : f[f.size()-1]);
     const VecCoord& x = this->mstate->read(core::ConstVecCoordId::position())->getValue();
 
-
-    if( this->getContext()->getTime() > startTime.getValue() && this->getContext()->getTime() < endTime.getValue())
     {
         if( fabs(aSC)<1.0e-10 )
         {
