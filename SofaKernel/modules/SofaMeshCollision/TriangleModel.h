@@ -69,6 +69,7 @@ public:
     const Coord& p3() const;
 
     const Coord& p(int i)const;
+	const Coord& p0(int i)const;
 
     int p1Index() const;
     int p2Index() const;
@@ -274,6 +275,10 @@ inline const typename DataTypes::Coord& TTriangle<DataTypes>::p3() const { retur
 template<class DataTypes>
 inline const typename DataTypes::Coord& TTriangle<DataTypes>::p(int i) const {
     return this->model->mstate->read(core::ConstVecCoordId::position())->getValue()[(*(this->model->triangles))[this->index][i]];
+}
+template<class DataTypes>
+inline const typename DataTypes::Coord& TTriangle<DataTypes>::p0(int i) const {
+    return (*this->model->mstate->getX0())[(*(this->model->triangles))[this->index][i]];
 }
 template<class DataTypes>
 inline const typename DataTypes::Coord& TTriangle<DataTypes>::operator[](int i) const {
