@@ -26,6 +26,7 @@
 
 #include <SofaMeshCollision/RigidContactMapper.inl>
 #include <SofaMeshCollision/BarycentricContactMapper.inl>
+#include <sofa/core/collision/DetectionOutput.h>
 
 namespace sofa
 {
@@ -55,7 +56,7 @@ Creator<sofa::core::collision::Contact::Factory, FrictionContact<SphereModel, Po
 Creator<sofa::core::collision::Contact::Factory, FrictionContact<CapsuleModel, CapsuleModel> > CapsuleCapsuleFrictionContactClass("FrictionContact",true);
 Creator<sofa::core::collision::Contact::Factory, FrictionContact<CapsuleModel, TriangleModel> > CapsuleTriangleFrictionContactClass("FrictionContact",true);
 Creator<sofa::core::collision::Contact::Factory, FrictionContact<CapsuleModel, SphereModel> > CapsuleSphereFrictionContactClass("FrictionContact",true);
-Creator<sofa::core::collision::Contact::Factory, FrictionContact<OBBModel, OBBModel> > OBBOBBFrictionContactClass("FrictionContact",true);
+//Creator<sofa::core::collision::Contact::Factory, FrictionContact<OBBModel, OBBModel> > OBBOBBFrictionContactClass("FrictionContact",true);
 Creator<sofa::core::collision::Contact::Factory, FrictionContact<SphereModel, OBBModel> > SphereOBBFrictionContactClass("FrictionContact",true);
 Creator<sofa::core::collision::Contact::Factory, FrictionContact<CapsuleModel, OBBModel> > CapsuleOBBFrictionContactClass("FrictionContact",true);
 Creator<sofa::core::collision::Contact::Factory, FrictionContact<TriangleModel, OBBModel> > TriangleOBBFrictionContactClass("FrictionContact",true);
