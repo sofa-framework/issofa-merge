@@ -84,6 +84,9 @@ public:
     typedef typename DataTypes::Real Real;
     typedef core::behavior::MechanicalState<DataTypes> MechanicalState;
 
+    typedef sofa::core::topology::Edge     Edge;
+    typedef sofa::core::topology::Triangle Triangle;
+    typedef sofa::core::topology::Topology::PointID PointID;
     typedef core::objectmodel::Data<VecCoord> DataVecCoord;
     typedef core::objectmodel::Data<VecDeriv> DataVecDeriv;
 
@@ -94,6 +97,9 @@ public:
 
     Data<SReal> f_bendingStiffness;  ///< Material parameter
     Data<SReal> d_minDistValidity; ///< Minimal distance to consider a spring valid
+
+    Data<bool>   d_useRestCurvature; ///< Use the rest curvature as the zero energy bending.  
+    Data<bool>   d_useOldAddForce; //warning: bug version
 
     Data<bool>   d_useRestCurvature; ///< Use the rest curvature as the zero energy bending.  
     Data<bool>   d_useOldAddForce; //warning: bug version
@@ -118,12 +124,11 @@ protected:
     class EdgeSpring
     {
     public:
-        enum {A=0,B,C,D};     ///< vertex names as in Volino's paper
+        enum {A=0,B,C,D};                        ///< vertex names as in Volino's paper
         sofa::defaulttype::Vec<4,unsigned> vid;  ///< vertex indices, in circular order
         sofa::defaulttype::Vec<4,Real> alpha;    ///< weight of each vertex in the bending vector
-        //mutable Deriv dpKfact[4];
-        Real lambda;          ///< bending stiffness
-        Deriv R0; ///< rest curvature;
+        Real lambda;                             ///< bending stiffness
+        Deriv R0;                                ///< rest curvature;
         bool is_activated;
         bool is_initialized;
 
@@ -258,9 +263,10 @@ protected:
         }
     };
 
-    
+    /// The list of edge springs, one for each edge between two triangles
+    sofa::component::topology::EdgeData<helper::vector<EdgeSpring> > edgeSprings;
 
-    class TriangularBSEdgeHandler : public topology::TopologyDataHandler<core::topology::BaseMeshTopology::Edge, helper::vector<EdgeSpring> >
+    class TriangularBSEdgeHandler : public sofa::component::topology::TopologyDataHandler<core::topology::BaseMeshTopology::Edge,helper::vector<EdgeSpring> >
     {
     public:
         typedef typename FastTriangularBendingSprings<DataTypes>::EdgeSpring EdgeSpring;
