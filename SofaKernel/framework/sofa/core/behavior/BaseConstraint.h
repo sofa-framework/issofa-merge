@@ -160,20 +160,7 @@ public:
 	/// Add the corresponding ConstraintResolution using the offset parameter
 	/// \param cParams defines the state vectors to use for positions and velocities. Also defines the order of the constraint (POS, VEL, ACC) and resolution parameters (smoothness, ...)
 	/// \param resTab is the result vector that contains the contraint resolution algorithms
-    virtual void getConstraintResolution(const ConstraintParams* cParams, std::vector<ConstraintResolution*> &resTab, unsigned int &offset)
-	{
-
-        getConstraintResolution(resTab, offset);
-		SOFA_UNUSED(cParams);
-
-    }
-
-    virtual void getConstraintResolution(std::vector<ConstraintResolution*> &resTab, unsigned int &offset)
-    {
-        SOFA_UNUSED(resTab);
-        SOFA_UNUSED(offset);
-    }
-
+    virtual void getConstraintResolution(const ConstraintParams* cParams, std::vector<ConstraintResolution*> &resTab, unsigned int &offset) = 0;
 };
 
 } // namespace behavior
