@@ -56,6 +56,7 @@ public:
 protected:
     MinProximityIntersection();
 public:
+    typedef sofa::helper::vector< sofa::core::collision::DetectionOutput > OutputVector;
     typedef core::collision::IntersectorFactory<MinProximityIntersection> IntersectorFactory;
 
     virtual void init();
