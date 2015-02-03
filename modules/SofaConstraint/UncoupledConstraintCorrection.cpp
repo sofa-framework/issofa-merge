@@ -49,6 +49,8 @@ template<>
 SOFA_CONSTRAINT_API UncoupledConstraintCorrection< sofa::defaulttype::Rigid3Types >::UncoupledConstraintCorrection(sofa::core::behavior::MechanicalState<sofa::defaulttype::Rigid3Types> *mm)
     : Inherit(mm)
     , compliance(initData(&compliance, "compliance", "Rigid compliance value: 1st value for translations, 6 others for upper-triangular part of symmetric 3x3 rotation compliance matrix"))
+    , defaultCompliance(initData(&defaultCompliance, (Real)0.00001, "defaultCompliance", "Default compliance value for new dof or if all should have the same (in which case compliance vector should be empty)"))
+    , f_verbose( initData(&f_verbose,false,"verbose","Dump the constraint matrix at each iteration") )
 {
 }
 
@@ -84,12 +86,20 @@ SOFA_CONSTRAINT_API void UncoupledConstraintCorrection< defaulttype::Rigid3Types
             else
                 serr << "WARNING : no mass found" << sendl;
         }
-        else
+        else if (!defaultCompliance.isSet())
         {
             serr << "\n WARNING : node is not found => massValue could be incorrect in addComplianceInConstraintSpace function" << sendl;
         }
 
         const double dt2 = dt * dt;
+        if (defaultCompliance.isSet())
+        {
+            usedComp.push_back(defaultCompliance.getValue());
+        }
+        else
+        {
+            usedComp.push_back(dt2 / massValue.mass);
+        }
 
         usedComp.push_back(dt2 / massValue.mass);
         usedComp.push_back(dt2 * massValue.invInertiaMassMatrix[0][0]);

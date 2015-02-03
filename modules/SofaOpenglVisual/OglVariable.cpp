@@ -504,7 +504,7 @@ void OglFloatVector4Variable::initVisual()
 
 //// Matrix /////
 OglMatrix2Variable::OglMatrix2Variable()
-    : transpose(initData(&transpose,false,"transpose","Transpose the matrix (e.g. to use row-dominant matrices in OpenGL"))
+    : transpose(initData(&transpose, false, "transpose", "Transpose the matrix (e.g. to use row-dominant matrices in OpenGL"))
 {
 
 }
