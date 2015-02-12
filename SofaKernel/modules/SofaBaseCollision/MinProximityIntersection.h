@@ -51,7 +51,7 @@ public:
     Data<bool> useSurfaceNormals;
     Data<bool> useLinePoint;
     Data<bool> useLineLine;
-    Data<bool> useTriangleLine;
+//    Data<bool> useTriangleLine;
 
 protected:
     MinProximityIntersection();
