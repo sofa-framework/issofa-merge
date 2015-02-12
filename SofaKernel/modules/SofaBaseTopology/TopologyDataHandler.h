@@ -44,6 +44,16 @@ namespace topology
 /////////////////////////////   Generic Topology Data Implementation   /////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/// Helper method to initialize a value_type stored in a topology-indexed Data.
+/// Can be specialized for types without default constructors
+template< class value_type >
+inline void TopologyDataHandler_clear(value_type& v) { v = value_type(); }
+
+/// Helper method to resize a container_type stored in a topology-indexed Data.
+/// Can be specialized for types without default constructors
+template< class container_type >
+inline void TopologyDataHandler_resize(container_type& data, unsigned int n) { data.resize(n); }
+
 /** \brief A class for storing Edge related data. Automatically manages topology changes.
 *
 * This class is a wrapper of class helper::vector that is made to take care transparently of all topology changes that might
@@ -95,7 +105,7 @@ public:
             const sofa::helper::vector< unsigned int > &,
             const sofa::helper::vector< double > &) {t = m_defaultValue;}
 
-    /// WARNING NEEED TO UNIFY THIS
+    /// WARNING NEED TO UNIFY THIS
     /// Apply adding current elementType elements
     virtual void applyCreateFunction(unsigned int i, value_type&t , const TopologyElementType& ,
             const sofa::helper::vector< unsigned int > &ancestors,
