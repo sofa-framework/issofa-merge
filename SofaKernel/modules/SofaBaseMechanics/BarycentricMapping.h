@@ -247,6 +247,7 @@ public:
     virtual void setToTopology( topology::PointSetTopologyContainer* toTopology) {this->toTopology = toTopology;}
     const topology::PointSetTopologyContainer *getToTopology() const {return toTopology;}
 
+    core::topology::BaseMeshTopology* getFromTopology() const { return fromTopology; }
 
     virtual void updateForceMask()
     {
@@ -887,7 +888,7 @@ public:
     void draw(const core::visual::VisualParams*,const typename Out::VecCoord& out, const typename In::VecCoord& in);
     virtual void resize( core::State<Out>* toModel );
 
-
+    const sofa::helper::vector<MappingData>& getMap() const {return this->map.getValue() ;}
 };
 
 
