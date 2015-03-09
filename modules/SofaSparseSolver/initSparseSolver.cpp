@@ -25,7 +25,6 @@
 #include <sofa/helper/system/config.h>
 #include <SofaSparseSolver/initSparseSolver.h>
 
-
 namespace sofa
 {
 
@@ -42,8 +41,9 @@ void initSparseSolver()
     }
 }
 
-#ifdef SOFA_HAVE_CSPARSE
 SOFA_LINK_CLASS(PrecomputedLinearSolver)
+
+#ifdef SOFA_HAVE_CSPARSE
 SOFA_LINK_CLASS(SparseCholeskySolver)
 SOFA_LINK_CLASS(SparseLUSolver)
 #endif
