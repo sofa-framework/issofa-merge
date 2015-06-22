@@ -103,6 +103,16 @@ void Base::initData0( BaseData* field, BaseData::BaseInitData& res, const char* 
     static uint32_t draw_prefix = *(uint32_t*)draw_str;
     static uint32_t show_prefix = *(uint32_t*)show_str;
 
+    if (name == NULL || help == NULL)
+    {
+        std::cerr << "Invalid inputs to "<<this->getClassName()<<"::initData0(): "
+                  << " name=" << (name ? name : "NULL")
+                  << " help=" << (help ? help : "NULL")
+                  << std::endl;
+        if (name == NULL) name="";
+        if (help == NULL) help="";
+    }
+
     /*
         std::string ln(name);
         if( ln.size()>0 && findField(ln) )
@@ -119,10 +129,13 @@ void Base::initData0( BaseData* field, BaseData::BaseInitData& res, const char* 
     res.helpMsg = help;
     res.dataFlags = dataFlags;
 
-    uint32_t prefix = *(uint32_t*)name;
+    if (name[0] && name[1] && name[2] && name[3]) // at least 4 characters
+    {
+        uint32_t prefix = *(uint32_t*) name;
 
-    if (prefix == draw_prefix || prefix == show_prefix)
-        res.group = "Visualization";
+        if (prefix == draw_prefix || prefix == show_prefix)
+            res.group = "Visualization";
+    }
 }
 
 /// Add a data field.
