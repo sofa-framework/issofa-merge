@@ -29,9 +29,11 @@
 #include <sofa/core/behavior/LinearSolver.h>
 #include <SofaBaseLinearSolver/MatrixLinearSolver.h>
 
+#ifdef SOFA_HAVE_METIS
 extern "C" {
 #include <metis.h>
 }
+#endif
 
 namespace sofa
 {
@@ -54,6 +56,39 @@ public :
     bool new_factorization_needed;
 };
 
+
+#ifdef SOFA_HAVE_METIS
+inline void CSPARSE_ordering(int n,int * M_colptr,int * M_rowind,int * perm,int * invperm, int * xadj, int * adj)
+{
+    int it = 0;
+    for (int j=0; j<n; j++)
+    {
+        xadj[j] = M_colptr[j] - j;
+
+        for (int ip = M_colptr[j]; ip < M_colptr[j+1]; ip++)
+        {
+            int i = M_rowind[ip];
+            if (i != j) adj[it++] = i;
+        }
+    }
+    xadj[n] = M_colptr[n] - n;
+
+    //int numflag = 0, options = 0;
+    // The new API of metis requires pointers on numflag and "options" which are "structure" to parametrize the factorization
+    // We give NULL and NULL to use the default option (see doc of metis for details) !
+    // If you have the error "SparseLDLSolver failure to factorize, D(k,k) is zero" that probably means that you use the previsou version of metis.
+    // In this case you have to download and install the last version from : www.cs.umn.edu/~metis‎
+    METIS_NodeND(&n, xadj,adj, NULL, NULL, perm,invperm);
+}
+#endif
+inline void CSPARSE_no_ordering(int n,int * /*M_colptr*/,int * /*M_rowind*/,int * perm,int * invperm, int * /*xadj*/, int * /*adj*/)
+{
+    for (int i=0; i<n; i++)
+    {
+        perm[i] = i;
+        invperm[i] = i;
+    }
+}
 inline void CSPARSE_symbolic (int n,int * M_colptr,int * M_rowind,int * colptr,int * perm,int * invperm,int * Parent, int * Flag, int * Lnz)
 {
     for (int k = 0 ; k < n ; k++)
@@ -165,9 +200,27 @@ public:
     typedef TThreadManager ThreadManager;
     typedef typename TMatrix::Real Real;
 
+    Data<int> d_orderingMode;
+
 protected :
 
-    SparseLDLSolverImpl() : Inherit() {}
+    SparseLDLSolverImpl()
+    : Inherit(),
+      d_orderingMode(initData(&d_orderingMode,
+#ifdef SOFA_HAVE_METIS
+                          1,
+#else
+                          0,
+#endif
+                          "orderingMode",
+                          "Permutation computation algorithm: 0 = disabled, 1 = METIS "
+#ifdef SOFA_HAVE_METIS
+                          "(available)"
+#else
+                          "(not available)"
+#endif
+                 ))
+    {}
 
     template<class VecInt,class VecReal>
     void solve_cpu(Real * x,const Real * b,SpaseLDLImplInvertData<VecInt,VecReal> * data) {
