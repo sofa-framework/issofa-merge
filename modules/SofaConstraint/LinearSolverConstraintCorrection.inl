@@ -73,7 +73,7 @@ void LinearSolverConstraintCorrection<DataTypes>::init()
 
     sofa::core::objectmodel::BaseContext* c = this->getContext();
 
-    odesolver=getOdeSolver(c);
+    c->get(odesolver);
 
     const helper::vector<std::string>& solverNames = solverName.getValue();
 
@@ -287,8 +287,6 @@ void LinearSolverConstraintCorrection< DataTypes >::computeDx(sofa::core::MultiV
 
         dx.clear();
         dx.resize(numDOFs);
-        for (unsigned int i=0; i< numDOFs; i++)
-            dx[i] = Deriv();
 
         linearsolvers[0]->setSystemRHVector(fId);
         linearsolvers[0]->setSystemLHVector(core::VecDerivId::dx());
@@ -411,16 +409,12 @@ void LinearSolverConstraintCorrection<DataTypes>::applyContactForce(const defaul
 
     dx.clear();
     dx.resize(numDOFs);
-    for (unsigned int i=0; i< numDOFs; i++)
-        dx[i] = Deriv();
 
     Data<VecDeriv>& dataForce = *this->mstate->write(forceID);
     VecDeriv& force = *dataForce.beginEdit();
 
     force.clear();
     force.resize(numDOFs);
-    for (unsigned int i=0; i< numDOFs; i++)
-        force[i] = Deriv();
 #if 0
     const unsigned int N = Deriv::size();
     const unsigned int numDOFReals = numDOFs*N;
