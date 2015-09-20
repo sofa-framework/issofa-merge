@@ -45,6 +45,7 @@
 #include <sofa/helper/gl/template.h>
 #include <SofaBaseTopology/TopologyData.inl>
 
+#include <SofaBaseLinearSolver/BlocMatrixWriter.h>
 namespace sofa
 {
 
@@ -462,14 +463,22 @@ void FastTriangularBendingSprings<DataTypes>::addDForce(const core::MechanicalPa
     }
 }
 
+template<class DataTypes>
+void FastTriangularBendingSprings<DataTypes>::addKToMatrix(const core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix)
+{
+    linearsolver::BlocMatrixWriter<Mat> writer;
+    writer.addKToMatrix(this, mparams, matrix->getMatrix(this->mstate));
+}
 
 template<class DataTypes>
-void FastTriangularBendingSprings<DataTypes>::addKToMatrix(sofa::defaulttype::BaseMatrix *mat, SReal scale, unsigned int &offset)
+template<class MatrixWriter>
+void FastTriangularBendingSprings<DataTypes>::addKToMatrixT(const core::MechanicalParams* mparams, MatrixWriter mwriter)
 {
+    const Real kFactor = (Real)mparams->kFactor();
     const helper::vector<EdgeSpring>& springs = edgeSprings.getValue();
     for(unsigned i=0; i< springs.size() ; i++)
     {
-        springs[i].addStiffness( mat, offset, scale, this);
+        springs[i].addStiffness(mwriter, kFactor);
     }
 }
 
