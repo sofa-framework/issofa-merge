@@ -107,6 +107,9 @@ public:
 
     using Inherit::addKToMatrix;
     virtual void addKToMatrix(const sofa::core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix);
+    template<class MatrixWriter>
+    void addKToMatrixT(const core::MechanicalParams* mparams, MatrixWriter m);
+
 };
 
 #if defined(SOFA_EXTERN_TEMPLATE) && !defined(SOFA_COMPONENT_FORCEFIELD_STIFFSPRINGFORCEFIELD_CPP)
