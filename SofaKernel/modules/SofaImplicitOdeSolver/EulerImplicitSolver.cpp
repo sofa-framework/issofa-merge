@@ -156,7 +156,7 @@ void EulerImplicitSolver::solve(const core::ExecParams* params, SReal dt, sofa::
     // compute the net forces at the beginning of the time step
     mop.computeForce(f);
     if( verbose )
-        serr<<"EulerImplicitSolver, initial f = "<< f <<sendl;
+        serr<<this->getContext()->getTime() << ": f = "<< f <<sendl;
 
     sofa::helper::AdvancedTimer::stepNext ("ComputeForce", "ComputeRHTerm");
     if( firstOrder )
@@ -192,12 +192,12 @@ void EulerImplicitSolver::solve(const core::ExecParams* params, SReal dt, sofa::
     }
 
     if( verbose )
-        serr<<"EulerImplicitSolver, b = "<< b <<sendl;
+        serr<<this->getContext()->getTime() << ": b = "<< b <<sendl;
 
     mop.projectResponse(b);          // b is projected to the constrained space
 
     if( verbose )
-        serr<<"EulerImplicitSolver, projected b = "<< b <<sendl;
+        serr<<this->getContext()->getTime() << ": projected b = "<< b <<sendl;
 
     sofa::helper::AdvancedTimer::stepNext ("ComputeRHTerm", "MBKBuild");
 
@@ -208,11 +208,11 @@ void EulerImplicitSolver::solve(const core::ExecParams* params, SReal dt, sofa::
     else
         matrix = MechanicalMatrix(1+tr*h*f_rayleighMass.getValue(),-tr*h,-tr*h*(h+f_rayleighStiffness.getValue())); // MechanicalMatrix::K * (-tr*h*(h+f_rayleighStiffness.getValue())) + MechanicalMatrix::B * (-tr*h) + MechanicalMatrix::M * (1+tr*h*f_rayleighMass.getValue());
 
-    if( verbose )
+    /*if( verbose )
     {
-        serr<<"EulerImplicitSolver, matrix = "<< (MechanicalMatrix::K * (-h*(h+f_rayleighStiffness.getValue())) + MechanicalMatrix::M * (1+h*f_rayleighMass.getValue())) << " = " << matrix <<sendl;
-        serr<<"EulerImplicitSolver, Matrix K = " << MechanicalMatrix::K << sendl;
-    }
+        serr<<this->getContext()->getTime() << ": matrix = "<< (MechanicalMatrix::K * (-h*(h+f_rayleighStiffness.getValue())) + MechanicalMatrix::M * (1+h*f_rayleighMass.getValue())) << " = " << matrix <<sendl;
+        serr<<this->getContext()->getTime() << ": Matrix K = " << MechanicalMatrix::K << sendl;
+    }*/
 
 #ifdef SOFA_DUMP_VISITOR_INFO
     simulation::Visitor::printNode("SystemSolution");
@@ -226,6 +226,11 @@ void EulerImplicitSolver::solve(const core::ExecParams* params, SReal dt, sofa::
 
     // mop.projectResponse(x);
     // x is the solution of the system
+
+    if (verbose)
+    {
+        serr<<this->getContext()->getTime() << ": solution = "<< x <<sendl;
+    }
 
     // apply the solution
 
@@ -309,10 +314,10 @@ void EulerImplicitSolver::solve(const core::ExecParams* params, SReal dt, sofa::
     {
         mop.propagateX(newPos, true);
         mop.propagateDx(newVel);
-        serr<<"EulerImplicitSolver, final x = "<< newPos <<sendl;
-        serr<<"EulerImplicitSolver, final v = "<< newVel <<sendl;
+        serr<<this->getContext()->getTime() << ": final x = "<< newPos <<sendl;
+        serr<<this->getContext()->getTime() << ": final v = "<< newVel <<sendl;
         mop.computeForce(f);
-        serr<<"EulerImplicitSolver, final f = "<< f <<sendl;
+        serr<<this->getContext()->getTime() << ": final f = "<< f <<sendl;
 
     }
 
