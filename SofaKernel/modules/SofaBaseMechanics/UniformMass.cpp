@@ -111,11 +111,15 @@ void UniformMass<Rigid3dTypes, Rigid3dMass>::reinit()
         mass.endEdit();
     }
     else
-        totalMass.setValue ( indices.size() * (Real)mass.getValue() );    
+    {
+        totalMass.setValue ( indices.size() * (Real)mass.getValue().mass );    
+    }
 
 
     mass.beginEdit()->recalc();
     mass.endEdit();
+
+    sout<< "mass =" << this->mass.getValue() << sendl;
 }
 
 
@@ -234,7 +238,10 @@ void UniformMass<Rigid3dTypes, Rigid3dMass>::loadRigidMass(std::string filename)
         }
         setMass(m);
     }
-    else if (totalMass.getValue()>0 && mstate!=NULL) mass.setValue((Real)totalMass.getValue() / mstate->getSize());
+    else if (totalMass.getValue()>0 && mstate!=NULL)
+    {
+        mass.setValue( MassType( (Real)totalMass.getValue() / mstate->getSize() ) );
+    }
 
 }
 
@@ -504,7 +511,7 @@ void UniformMass<Rigid3fTypes, Rigid3fMass>::reinit()
         mass.endEdit();
     }
     else
-        totalMass.setValue ( indices.size() * (Real)mass.getValue() );
+        totalMass.setValue ( indices.size() * (Real)mass.getValue().mass );
 
     mass.beginEdit()->recalc();
     mass.endEdit();
@@ -630,8 +637,11 @@ void UniformMass<Rigid3fTypes, Rigid3fMass>::loadRigidMass(std::string filename)
 
         setMass(m);
     }
-    else if (totalMass.getValue()>0 ) mass.setValue((Real)totalMass.getValue());
-    totalMass.setValue(0.0f);
+    else if (totalMass.getValue()>0 ) 
+    {
+        mass.setValue( MassType( (Real)totalMass.getValue() ) );
+    }
+    this->totalMass.setValue(0.0f);
 
 }
 
