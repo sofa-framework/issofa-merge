@@ -80,6 +80,7 @@ struct vectorData_test: public ::testing::Test
 
     vectorData_test()
         : vDataInt(NULL,"","")
+        , data1("data1")
     { }
 
     void SetUp()
