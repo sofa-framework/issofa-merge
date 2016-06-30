@@ -55,6 +55,8 @@ public:
 
     virtual void addMToMatrix(const core::MechanicalParams *mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix);
 
+    virtual void accFromF(const core::MechanicalParams* mparams, DataVecDeriv& a, const DataVecDeriv& f);
+
     //template<class MatrixWriter>
     //void addMToMatrixT(const core::MechanicalParams* mparams, MatrixWriter m);
 

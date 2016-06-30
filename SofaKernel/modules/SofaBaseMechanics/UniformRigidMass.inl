@@ -41,7 +41,7 @@ typename TRigidMass::Mat3x3 computeInertiaMassMatrixWorld( const TRigidCoord& x,
 /// - I is the inertia mass matrix in world coordinates
 template< typename TRigidCoord, typename TVec3, typename TRigidMass >
 TVec3 computeGyroscopicForceExplicit(const TRigidCoord& x, 
-                                     const TVec3&       w, 
+                                     const TVec3&       w,
                                      const TRigidMass&  mass )
 {
     const typename TRigidMass::Mat3x3  intertiaMassMatrixWorld = computeInertiaMassMatrixWorld(x,mass);
@@ -52,12 +52,10 @@ TVec3 computeGyroscopicForceExplicit(const TRigidCoord& x,
 
 template< class RigidDataTypes >
 UniformRigidMass<RigidDataTypes>::UniformRigidMass()
-:d_mass(initData(&d_mass,sofa::helper::vector<TRigidMass>(1,TRigidMass() ),"mass","The uniform mass for each dof that compose the rigid object"))
-,d_useGyroscopicExplicit(initData(&d_useGyroscopicExplicit,false,"useGyroscopicExplicit","Specify if the gyroscopic term should be computed using explicit formulation.\
-                                                                                          Only for debug / comparsion purposes, since explicit formulation diverges."))
-,d_maxGyroscopicForce(initData(&d_maxGyroscopicForce,Real(0.0),"maxGyroscopicForce","Used only for explicit computation of gyroscopic term. \
-                                                                                     Clamp value must be specified, since explicit computation diverges"))
-,d_drawAxisFactor(initData(&d_drawAxisFactor,1.0f,"drawAxisFactor","Draw: the factor applied on the size of the axis"))
+    :d_mass(initData(&d_mass,sofa::helper::vector<TRigidMass>(1,TRigidMass() ),"mass","The uniform mass for each dof that compose the rigid object"))
+    ,d_useGyroscopicExplicit(initData(&d_useGyroscopicExplicit,false,"useGyroscopicExplicit","Specify if the gyroscopic term should be computed using explicit formulation. Only for debug / comparsion purposes, since explicit formulation diverges."))
+    ,d_maxGyroscopicForce(initData(&d_maxGyroscopicForce,Real(0.0),"maxGyroscopicForce","Used only for explicit computation of gyroscopic term. Clamp value must be specified, since explicit computation diverges"))
+    ,d_drawAxisFactor(initData(&d_drawAxisFactor,1.0f,"drawAxisFactor","Draw: the factor applied on the size of the axis"))
 {
 }
 
@@ -167,7 +165,7 @@ void UniformRigidMass<RigidDataTypes>::addMToMatrix(const core::MechanicalParams
         TRigidMass mass = i < rigidMass.size() ? rigidMass[i] : rigidMass[0];
         mass *= mFactor;
         // translation
-        for(unsigned j = 0; j < 3; ++j) 
+        for(unsigned j = 0; j < 3; ++j)
         {
             r.matrix->add(r.offset + size * i + j,
                           r.offset + size * i + j,
@@ -177,9 +175,9 @@ void UniformRigidMass<RigidDataTypes>::addMToMatrix(const core::MechanicalParams
         typename TRigidMass::Mat3x3 inertiaMassMatrixWorld = computeInertiaMassMatrixWorld(x[i], mass );
 
         // rotation
-        for(unsigned j = 0; j < 3; ++j) 
+        for(unsigned j = 0; j < 3; ++j)
         {
-            for(unsigned k = 0; k < 3; ++k) 
+            for(unsigned k = 0; k < 3; ++k)
             {
                 r.matrix->add(r.offset + size * i + 3 + j,
                               r.offset + size * i + 3 + k,
@@ -190,12 +188,30 @@ void UniformRigidMass<RigidDataTypes>::addMToMatrix(const core::MechanicalParams
 }
 
 template< class RigidDataTypes >
+void UniformRigidMass<RigidDataTypes>::accFromF(const core::MechanicalParams*, DataVecDeriv& va, const DataVecDeriv& vf)
+{
+    sofa::helper::WriteOnlyAccessor<DataVecDeriv> a = va;
+    sofa::helper::ReadAccessor<DataVecDeriv> f = vf;
+
+    int massSize = d_mass.getValue().size();
+
+    if(massSize <= a.size() && massSize <= f.size())
+    {
+        sofa::helper::vector<TRigidMass> m = d_mass.getValue();
+        for ( unsigned int i = 0; i < massSize; i++ )
+        {
+            a[i] = f[i] / m[i].mass; // m[i] is RigidMass<3, real>
+        }
+    }
+}
+
+template< class RigidDataTypes >
 void UniformRigidMass<RigidDataTypes>::draw(const sofa::core::visual::VisualParams* vparams)
 {
-   if (!vparams->displayFlags().getShowBehaviorModels())
-   {
+    if (!vparams->displayFlags().getShowBehaviorModels())
+    {
         return;
-   }
+    }
     sofa::helper::ReadAccessor< DataVecCoord > x = this->getMState()->readPositions();
     sofa::helper::ReadAccessor< sofa::Data< sofa::helper::vector< TRigidMass > > > rigidMass(vparams,d_mass);
 
@@ -234,7 +250,6 @@ void UniformRigidMass<RigidDataTypes>::draw(const sofa::core::visual::VisualPara
     helper::gl::glVertexT(gravityCenter - typename RigidDataTypes::CPos(0,0,d_drawAxisFactor.getValue()) );
     helper::gl::glVertexT(gravityCenter + typename RigidDataTypes::CPos(0,0,d_drawAxisFactor.getValue()) );
     glEnd();
-    
 }
 
 
