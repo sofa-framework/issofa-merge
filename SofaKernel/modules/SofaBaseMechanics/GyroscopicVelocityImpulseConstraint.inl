@@ -7,7 +7,7 @@ namespace sofa
 {
 namespace component
 {
-namespace constraint
+namespace projectiveconstraintset
 {
 
 /// Solve A * x = b, where b is a column vector. This is more efficient

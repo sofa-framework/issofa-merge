@@ -7,7 +7,7 @@ namespace sofa
 {
 namespace component
 {
-namespace constraint
+namespace projectiveconstraintset
 {
 
 SOFA_DECL_CLASS(GyroscopicVelocityImpulseConstraint)
