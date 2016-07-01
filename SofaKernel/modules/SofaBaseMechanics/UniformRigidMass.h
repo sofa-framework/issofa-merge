@@ -35,10 +35,10 @@ public:
     typedef typename RigidDataTypes::Deriv       RigidDeriv;
     typedef typename RigidDataTypes::MatrixDeriv RigidMatrixDeriv;
 
-    typedef typename sofa::defaulttype::RigidMass< spatial_dimensions, Real > TRigidMass;
+    typedef typename sofa::defaulttype::RigidMass< spatial_dimensions, Real > RigidMass;
 
 
-    sofa::Data< sofa::helper::vector<TRigidMass> > d_mass;
+    sofa::Data< sofa::helper::vector<RigidMass> > d_mass;
     sofa::Data< bool  >      d_useGyroscopicExplicit;
     sofa::Data< Real  >      d_maxGyroscopicForce;
     sofa::Data< float >      d_drawAxisFactor;
@@ -78,6 +78,47 @@ protected:
     UniformRigidMass();
 
 };
+
+/// Convert to global coordinates the local matrix using the given orientation quaternion.
+/// local is a diagonal matrix ( either the local inertia mass matrix, or its inverse )
+template< typename TQuat , typename TReal >
+sofa::defaulttype::Mat<3,3,TReal> localToGlobal(const TQuat& orientation, const sofa::defaulttype::Mat<3,3,TReal>& local )
+{
+    sofa::defaulttype::Mat<3,3,TReal> rotation(sofa::defaulttype::NOINIT);
+    orientation.toMatrix(rotation);
+
+    const typename sofa::defaulttype::Mat<3,3,TReal>::Line diag = sofa::defaulttype::diagonal(local);
+    sofa::defaulttype::Mat<3,3,TReal> global = rotation.multDiagonal( diag ) * rotation.transposed();
+
+    return global;
+}
+
+template< typename TRigidCoord, typename TRigidMass >
+typename TRigidMass::Mat3x3 computeInertiaMassMatrixWorld( const TRigidCoord& x, const TRigidMass& mass)
+{
+    const typename TRigidMass::Mat3x3 inertiaMassMatrixLocal = mass.inertiaMatrix * mass.mass;
+    return localToGlobal( x.getOrientation(), inertiaMassMatrixLocal );
+}
+
+template< typename TRigidCoord, typename TRigidMass >
+typename TRigidMass::Mat3x3 computeInvInertiaMassMatrixWorld( const TRigidCoord& x, const TRigidMass& mass)
+{
+    const typename TRigidMass::Mat3x3 invInertiaMassMatrixLocal = mass.invInertiaMatrix / mass.mass;
+    return localToGlobal( x.getOrientation(), invInertiaMassMatrixLocal );
+}
+
+/// returns an explicit computation of the gyroscopic force.
+/// in an explicit setting the gyroscopic force is gf = w x I.w  where :
+/// - w is the angular velocity
+/// - I is the inertia mass matrix in world coordinates
+template< typename TRigidCoord, typename TVec3, typename TRigidMass >
+TVec3 computeGyroscopicForceExplicit(const TRigidCoord& x, const TVec3& w, const TRigidMass&  mass )
+{
+    const typename TRigidMass::Mat3x3  intertiaMassMatrixWorld = computeInertiaMassMatrixWorld(x,mass);
+    const TVec3 Iw   = intertiaMassMatrixWorld * w;
+    const TVec3 wxIw = sofa::defaulttype::cross( w, Iw );
+    return wxIw;
+}
 
 #if defined(SOFA_EXTERN_TEMPLATE) && !defined(SOFA_COMPONENT_MASS_UNIFORMRIGIDMASS_CPP)
 #ifndef SOFA_FLOAT

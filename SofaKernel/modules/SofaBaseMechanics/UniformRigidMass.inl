@@ -14,45 +14,9 @@ namespace component
 namespace mass
 {
 
-/// Convert to global coordinates the local matrix using the given orientation quaternion.
-/// local is a diagonal matrix ( either the local inertia mass matrix, or its inverse )
-template< typename TQuat , typename TReal >
-sofa::defaulttype::Mat<3,3,TReal> localToGlobal(const TQuat& orientation, const sofa::defaulttype::Mat<3,3,TReal>& local )
-{
-    sofa::defaulttype::Mat<3,3,TReal> rotation(sofa::defaulttype::NOINIT);
-    orientation.toMatrix(rotation);
-
-    const typename sofa::defaulttype::Mat<3,3,TReal>::Line diag = sofa::defaulttype::diagonal(local);
-    sofa::defaulttype::Mat<3,3,TReal> global = rotation.multDiagonal( diag ) * rotation.transposed();
-
-    return global;
-}
-
-template< typename TRigidCoord, typename TRigidMass >
-typename TRigidMass::Mat3x3 computeInertiaMassMatrixWorld( const TRigidCoord& x, const TRigidMass& mass)
-{
-    const typename TRigidMass::Mat3x3 inertiaMassMatrixLocal = mass.inertiaMatrix * mass.mass;
-    return localToGlobal( x.getOrientation(), inertiaMassMatrixLocal );
-}
-
-/// returns an explicit computation of the gyroscopic force.
-/// in an explicit setting the gyroscopic force is gf = w x I.w  where : 
-/// - w is the angular velocity
-/// - I is the inertia mass matrix in world coordinates
-template< typename TRigidCoord, typename TVec3, typename TRigidMass >
-TVec3 computeGyroscopicForceExplicit(const TRigidCoord& x, 
-                                     const TVec3&       w,
-                                     const TRigidMass&  mass )
-{
-    const typename TRigidMass::Mat3x3  intertiaMassMatrixWorld = computeInertiaMassMatrixWorld(x,mass);
-    const TVec3 Iw   = intertiaMassMatrixWorld * w;
-    const TVec3 wxIw = sofa::defaulttype::cross( w, Iw );
-    return wxIw;
-}
-
 template< class RigidDataTypes >
 UniformRigidMass<RigidDataTypes>::UniformRigidMass()
-    :d_mass(initData(&d_mass,sofa::helper::vector<TRigidMass>(1,TRigidMass() ),"mass","The uniform mass for each dof that compose the rigid object"))
+    :d_mass(initData(&d_mass,sofa::helper::vector<RigidMass>(1,RigidMass() ),"mass","The uniform mass for each dof that compose the rigid object"))
     ,d_useGyroscopicExplicit(initData(&d_useGyroscopicExplicit,false,"useGyroscopicExplicit","Specify if the gyroscopic term should be computed using explicit formulation. Only for debug / comparsion purposes, since explicit formulation diverges."))
     ,d_maxGyroscopicForce(initData(&d_maxGyroscopicForce,Real(0.0),"maxGyroscopicForce","Used only for explicit computation of gyroscopic term. Clamp value must be specified, since explicit computation diverges"))
     ,d_drawAxisFactor(initData(&d_drawAxisFactor,1.0f,"drawAxisFactor","Draw: the factor applied on the size of the axis"))
@@ -71,7 +35,7 @@ void UniformRigidMass<RigidDataTypes>::reinit()
 {
     Inherit1::reinit();
 
-    sofa::helper::WriteAccessor< sofa::Data< sofa::helper::vector< TRigidMass > > > rigidMass = d_mass;
+    sofa::helper::WriteAccessor< sofa::Data< sofa::helper::vector< RigidMass > > > rigidMass = d_mass;
 
     for(std::size_t i=0;i<rigidMass.size();++i)
     {
@@ -90,11 +54,11 @@ void UniformRigidMass<RigidDataTypes>::addForce( const sofa::core::MechanicalPar
 
     f.resize( x.size() );
 
-    sofa::helper::ReadAccessor< sofa::Data< sofa::helper::vector< TRigidMass > > > rigidMass(mparams,d_mass);
+    sofa::helper::ReadAccessor< sofa::Data< sofa::helper::vector< RigidMass > > > rigidMass(mparams,d_mass);
 
     for(std::size_t i=0;i<f.size();++i)
     {
-        const TRigidMass& m = i < rigidMass.size() ? rigidMass[i] : rigidMass[0];
+        const RigidMass& m = i < rigidMass.size() ? rigidMass[i] : rigidMass[0];
         typename RigidDataTypes::DPos mg = this->getContext()->getGravity()*m.mass;
         f[i].getLinear() += mg;
     }
@@ -103,7 +67,7 @@ void UniformRigidMass<RigidDataTypes>::addForce( const sofa::core::MechanicalPar
     {
         for(std::size_t i=0;i<f.size(); ++i)
         {
-            const TRigidMass& m = i < rigidMass.size() ? rigidMass[i] : rigidMass[0];
+            const RigidMass& m = i < rigidMass.size() ? rigidMass[i] : rigidMass[0];
             typename RigidDeriv::Vec3 gyroscopicForce = computeGyroscopicForceExplicit(x[i],v[i].getAngular(),m );
             const Real  maxGyroNorm  = d_maxGyroscopicForce.getValue(mparams);
             const Real  maxGyroNorm2 = maxGyroNorm*maxGyroNorm  ;
@@ -132,15 +96,15 @@ void UniformRigidMass<RigidDataTypes>::addMDx( const sofa::core::MechanicalParam
     sofa::helper::WriteAccessor< DataVecDeriv> df(mparams,d_df);
     df.resize( dx.size() );
     sofa::helper::ReadAccessor< DataVecCoord > x( mparams, mparams->readX( this->getMState()  ) );
-    sofa::helper::ReadAccessor< sofa::Data< sofa::helper::vector< TRigidMass > > > rigidMass(mparams,d_mass);
+    sofa::helper::ReadAccessor< sofa::Data< sofa::helper::vector< RigidMass > > > rigidMass(mparams,d_mass);
     //const bool verbose = this->f_printLog.getValue();
 
     for(std::size_t i=0;i<df.size();++i)
     {
-        const TRigidMass& mass = i < rigidMass.size() ? rigidMass[i] : rigidMass[0];
+        const RigidMass& mass = i < rigidMass.size() ? rigidMass[i] : rigidMass[0];
         df[i].getLinear() +=  dx[i].getLinear() * mass.mass * factor ;
 
-        typename TRigidMass::Mat3x3 inertiaMassMatrixWorld  = computeInertiaMassMatrixWorld(x[i], mass );
+        typename RigidMass::Mat3x3 inertiaMassMatrixWorld  = computeInertiaMassMatrixWorld(x[i], mass );
         inertiaMassMatrixWorld *= (Real)factor;
         df[i].getAngular() += inertiaMassMatrixWorld * dx[i].getAngular();
     }
@@ -156,13 +120,13 @@ void UniformRigidMass<RigidDataTypes>::addMToMatrix(const core::MechanicalParams
     const unsigned size = sofa::defaulttype::DataTypeInfo<typename RigidDataTypes::Deriv>::size();
 
     sofa::helper::ReadAccessor< DataVecCoord > x( mparams, mparams->readX( this->getMState()  ) );
-    sofa::helper::ReadAccessor< sofa::Data< sofa::helper::vector< TRigidMass > > > rigidMass(mparams,d_mass);
+    sofa::helper::ReadAccessor< sofa::Data< sofa::helper::vector< RigidMass > > > rigidMass(mparams,d_mass);
 
     Real mFactor = Real( mparams->mFactor() );
 
     for(std::size_t i=0; i< (std::size_t)this->getMState()->getSize(); ++i)
     {
-        TRigidMass mass = i < rigidMass.size() ? rigidMass[i] : rigidMass[0];
+        RigidMass mass = i < rigidMass.size() ? rigidMass[i] : rigidMass[0];
         mass *= mFactor;
         // translation
         for(unsigned j = 0; j < 3; ++j)
@@ -172,7 +136,7 @@ void UniformRigidMass<RigidDataTypes>::addMToMatrix(const core::MechanicalParams
                           mass.mass);
         }
 
-        typename TRigidMass::Mat3x3 inertiaMassMatrixWorld = computeInertiaMassMatrixWorld(x[i], mass );
+        typename RigidMass::Mat3x3 inertiaMassMatrixWorld = computeInertiaMassMatrixWorld(x[i], mass );
 
         // rotation
         for(unsigned j = 0; j < 3; ++j)
@@ -188,19 +152,29 @@ void UniformRigidMass<RigidDataTypes>::addMToMatrix(const core::MechanicalParams
 }
 
 template< class RigidDataTypes >
-void UniformRigidMass<RigidDataTypes>::accFromF(const core::MechanicalParams*, DataVecDeriv& va, const DataVecDeriv& vf)
+void UniformRigidMass<RigidDataTypes>::accFromF(const core::MechanicalParams* mparams, DataVecDeriv& va, const DataVecDeriv& vf)
 {
     sofa::helper::WriteOnlyAccessor<DataVecDeriv> a = va;
     sofa::helper::ReadAccessor<DataVecDeriv> f = vf;
 
-    int massSize = d_mass.getValue().size();
+    std::size_t massSize = d_mass.getValue().size();
+    a.resize( f.size() );
 
-    if(massSize <= a.size() && massSize <= f.size())
+    if(massSize <= f.size())
     {
-        sofa::helper::vector<TRigidMass> m = d_mass.getValue();
+        sofa::helper::ReadAccessor< sofa::Data< sofa::helper::vector< RigidMass > > > rigidMass(d_mass);
+
         for ( unsigned int i = 0; i < massSize; i++ )
         {
-            a[i] = f[i] / m[i].mass; // m[i] is RigidMass<3, real>
+            sofa::helper::ReadAccessor< DataVecCoord > x( mparams, mparams->readX( this->getMState()  ) );
+
+            for( std::size_t i=0; i< f.size(); ++i)
+            {
+                const RigidMass& m = i < rigidMass.size() ? rigidMass[i] : rigidMass[0];
+                typename RigidMass::Mat3x3 invInertiaMassMatrixWorld  = computeInvInertiaMassMatrixWorld(x[i], m );
+                a[i].getLinear() = f[i].getLinear() / m.mass;
+                a[i].getAngular() = invInertiaMassMatrixWorld * f[i].getAngular();
+            }
         }
     }
 }
@@ -213,7 +187,7 @@ void UniformRigidMass<RigidDataTypes>::draw(const sofa::core::visual::VisualPara
         return;
     }
     sofa::helper::ReadAccessor< DataVecCoord > x = this->getMState()->readPositions();
-    sofa::helper::ReadAccessor< sofa::Data< sofa::helper::vector< TRigidMass > > > rigidMass(vparams,d_mass);
+    sofa::helper::ReadAccessor< sofa::Data< sofa::helper::vector< RigidMass > > > rigidMass(vparams,d_mass);
 
     typename RigidDataTypes::CPos gravityCenter;
     typename RigidDataTypes::CPos len;
@@ -229,7 +203,7 @@ void UniformRigidMass<RigidDataTypes>::draw(const sofa::core::visual::VisualPara
 
     for (unsigned int i=0; i< x.size(); ++i)
     {
-        const TRigidMass& mass = i<rigidMass.size() ? rigidMass[i] : rigidMass[0];
+        const RigidMass& mass = i<rigidMass.size() ? rigidMass[i] : rigidMass[0];
         Real m00 = mass.inertiaMatrix[0][0];
         Real m11 = mass.inertiaMatrix[1][1];
         Real m22 = mass.inertiaMatrix[2][2];

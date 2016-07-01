@@ -3,6 +3,7 @@
 
 #include "RigidMassComplianceEngine.h"
 
+#include <SofaBaseMechanics/UniformRigidMass.h>
 
 namespace sofa
 {
@@ -10,35 +11,6 @@ namespace component
 {
 namespace engine
 {
-
-/// Convert to global coordinates the local matrix using the given orientation quaternion.
-/// local is a diagonal matrix ( either the local inertia mass matrix, or its inverse )
-template< typename TQuat , typename TReal >
-sofa::defaulttype::Mat<3,3,TReal> localToGlobal(const TQuat& orientation, const sofa::defaulttype::Mat<3,3,TReal>& local )
-{
-    sofa::defaulttype::Mat<3,3,TReal> rotation(sofa::defaulttype::NOINIT);
-    orientation.toMatrix(rotation);
-
-    const typename sofa::defaulttype::Mat<3,3,TReal>::Line diag = sofa::defaulttype::diagonal(local);
-    sofa::defaulttype::Mat<3,3,TReal> global = rotation.multDiagonal( diag ) * rotation.transposed();
-
-    return global;
-}
-
-//template< typename TRigidCoord, typename TRigidMass >
-//typename TRigidMass::Mat3x3 computeInertiaMassMatrixWorld( const TRigidCoord& x, const TRigidMass& mass)
-//{
-//    const typename TRigidMass::Mat3x3 inertiaMassMatrixLocal = mass.inertiaMatrix * mass.mass;
-//    return localToGlobal( x.getOrientation(), inertiaMassMatrixLocal );
-//}
-
-template< typename TRigidCoord, typename TRigidMass >
-typename TRigidMass::Mat3x3 computeInvInertiaMassMatrixWorld( const TRigidCoord& x, const TRigidMass& mass)
-{
-    const typename TRigidMass::Mat3x3 invInertiaMassMatrixLocal = mass.invInertiaMatrix / mass.mass;
-    return localToGlobal( x.getOrientation(), invInertiaMassMatrixLocal );
-}
-
 
 template< class TRigidDataTypes>
 RigidMassComplianceEngine<TRigidDataTypes>::RigidMassComplianceEngine()
@@ -81,7 +53,7 @@ void RigidMassComplianceEngine<TRigidDataTypes>::update()
 
         for(std::size_t i=0;i< size; ++i)
         {
-            typename TRigidMass::Mat3x3 invInertiaGlobal = computeInvInertiaMassMatrixWorld( rigidPosition[i], rigidMass[i] );
+            typename TRigidMass::Mat3x3 invInertiaGlobal = sofa::component::mass::computeInvInertiaMassMatrixWorld( rigidPosition[i], rigidMass[i] );
             rigidCompliance[i] = rigidComplianceFromInertiaMassMatrix( invInertiaGlobal, rigidMass[i].mass, h2 ); 
         }
 
