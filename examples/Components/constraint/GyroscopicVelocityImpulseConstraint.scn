@@ -1,0 +1,29 @@
+<Node name="root" gravity="0 0 0" dt="0.016666668" >
+  
+  <VisualStyle displayFlags="showBehaviorModels showForceFields showCollisionModels showVisual" />
+  <FreeMotionAnimationLoop solveVelocityConstraintFirst="0" />
+  <GenericConstraintSolver tolerance="1e-9" printLog="false" maxIterations="1000"/>   
+  <CollisionPipeline depth="15" verbose="0" draw="0" />
+  <BruteForceDetection name="N2" />
+  <LocalMinDistance name="Proximity" alarmDistance="0.3" contactDistance="0.1" useLMDFilters="0" />
+  <CollisionResponse name="Response" response="SoftFrictionContact" />
+  
+  <!-- Gyroscopic term not computed -->
+  <include href="GyroscopicVelocityImpulseConstraint_RigidCylinderInertia.xml" position="0 0 0 0 0 0 1"
+           RigidMass__useGyroscopicExplicit="false"
+           GyroscopicImpulse__active="false"
+           />
+
+  <!-- Gyroscopic term computed using explicit formulation by UniformRigidMass -->
+  <include href="GyroscopicVelocityImpulseConstraint_RigidCylinderInertia.xml" position="2 0 0 0 0 0 1"
+           RigidMass__useGyroscopicExplicit="true"
+           RigidMass__maxGyroscopicForce="10.0"
+           GyroscopicImpulse__active="false"
+           />
+
+  <!-- Gyroscopic term computed using implicit formulation by GyroscopicVelocityImpulseConstraint -->
+  <include href="GyroscopicVelocityImpulseConstraint_RigidCylinderInertia.xml" position="4 0 0 0 0 0 1"
+           RigidMass__useGyroscopicExplicit="false"
+           GyroscopicImpulse__active="true"
+           />
+</Node>
