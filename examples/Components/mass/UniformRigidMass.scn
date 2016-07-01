@@ -1,0 +1,8 @@
+<Node name="root" gravity="0 -9.81 0" dt="0.01">
+    <VisualStyle displayFlags="showBehavior" />
+    <EulerSolver name="Explicit Euler Solver" />
+    <Node name="FirstObject">
+        <MechanicalObject template="Rigid" name="Particle" position="0 0 0  0 0 0 0" showObject="1" />
+        <UniformRigidMass template="Rigid" name="Mass" />
+    </Node>
+</Node>
