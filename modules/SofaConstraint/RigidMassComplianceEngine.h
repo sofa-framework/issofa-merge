@@ -1,5 +1,6 @@
 #ifndef SOFACONSTRAINT_RIGIDMASSCOMPLIANCEENGINE_H
 #define SOFACONSTRAINT_RIGIDMASSCOMPLIANCEENGINE_H
+#include "config.h"
 
 #include <sofa/core/DataEngine.h>
 #include <sofa/defaulttype/RigidTypes.h>
@@ -54,6 +55,15 @@ protected:
 
 
 };
+
+#if defined(SOFA_EXTERN_TEMPLATE) && !defined(SOFA_COMPONENT_MASS_UNIFORMRIGIDMASS_CPP)
+#ifndef SOFA_FLOAT
+extern template class SOFA_CONSTRAINT_API RigidMassComplianceEngine<sofa::defaulttype::Rigid3dTypes>;
+#endif
+#ifndef SOFA_DOUBLE
+extern template class SOFA_CONSTRAINT_API RigidMassComplianceEngine<sofa::defaulttype::Rigid3fTypes>;
+#endif
+#endif
 
 }
 
