@@ -312,9 +312,6 @@ protected:
         }
     };
 
-    /// The list of edge springs, one for each edge between two triangles
-    sofa::component::topology::EdgeData<helper::vector<EdgeSpring> > edgeSprings;
-
     class TriangularBSEdgeHandler : public sofa::component::topology::TopologyDataHandler<core::topology::BaseMeshTopology::Edge,helper::vector<EdgeSpring> >
     {
     public:
@@ -351,22 +348,22 @@ protected:
 
     protected:
         FastTriangularBendingSprings<DataTypes>* ff;
-    };
+    };    
 
+protected: // FastTriangularBendingSprings members
     sofa::core::topology::BaseMeshTopology* _topology;
 
-
-    FastTriangularBendingSprings();
-
-    virtual ~FastTriangularBendingSprings();
-
-    sofa::component::topology::EdgeData<helper::vector<EdgeSpring> > &getEdgeInfo() {return edgeSprings;}
-
     /// The list of edge springs, one for each edge between two triangles
-    EdgeData<helper::vector<EdgeSpring> > edgeSprings;
+    sofa::component::topology::EdgeData<helper::vector<EdgeSpring> > edgeSprings;
+
     TriangularBSEdgeHandler* edgeHandler;
 
     SReal m_potentialEnergy;
+
+    FastTriangularBendingSprings();
+    virtual ~FastTriangularBendingSprings();
+
+    sofa::component::topology::EdgeData<helper::vector<EdgeSpring> > &getEdgeInfo() {return edgeSprings;}
 };
 
 #if defined(SOFA_EXTERN_TEMPLATE) && !defined(SOFA_COMPONENT_FORCEFIELD_FastTriangularBendingSprings_CPP)
