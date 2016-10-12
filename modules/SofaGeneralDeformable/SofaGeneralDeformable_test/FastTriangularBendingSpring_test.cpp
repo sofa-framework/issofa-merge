@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include <sofa/component/forcefield/FastTriangularBendingSprings.h>
+#include <SofaGeneralDeformable/FastTriangularBendingSprings.h>
 
-#include "VecTypes.h"
+#include <sofa/defaulttype/VecTypes.h>
 
 namespace
 {
