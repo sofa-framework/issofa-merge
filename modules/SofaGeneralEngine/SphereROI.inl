@@ -407,7 +407,6 @@ void SphereROI<DataTypes>::update()
     SetIndex& triangleIndices = *(f_triangleIndices.beginWriteOnly());
     SetIndex& quadIndices = *(f_quadIndices.beginWriteOnly());
     SetIndex& tetrahedronIndices = *f_tetrahedronIndices.beginWriteOnly();
-    SetIndex& indicesOut = *(f_indicesOut.beginWriteOnly());
 
     // Write accessor for toplogical element in SPHERE
     helper::WriteOnlyAccessor< Data<VecCoord > > pointsInROI = f_pointsInROI;
@@ -417,18 +416,18 @@ void SphereROI<DataTypes>::update()
     helper::WriteOnlyAccessor< Data<helper::vector<Tetra> > > tetrahedraInROI = f_tetrahedraInROI;
 
     // Write accessor for topological element indices in SPHERE
-    SetIndex& indicesOut = *(f_indicesOut.beginEdit());
-    SetIndex& edgeIndicesOut = *(f_edgeIndicesOut.beginEdit());
-    SetIndex& triangleIndicesOut = *(f_triangleIndicesOut.beginEdit());
-    SetIndex& quadIndicesOut = *(f_quadIndicesOut.beginEdit());
-    SetIndex& tetrahedronIndicesOut = *f_tetrahedronIndicesOut.beginEdit();
+    SetIndex& indicesOut = *(f_indicesOut.beginWriteOnly());
+    SetIndex& edgeIndicesOut = *(f_edgeIndicesOut.beginWriteOnly());
+    SetIndex& triangleIndicesOut = *(f_triangleIndicesOut.beginWriteOnly());
+    SetIndex& quadIndicesOut = *(f_quadIndicesOut.beginWriteOnly());
+    SetIndex& tetrahedronIndicesOut = *f_tetrahedronIndicesOut.beginWriteOnly();
 
     // Write accessor for toplogical element in SPHERE
-    helper::WriteAccessor< Data<VecCoord > > pointsOutROI = f_pointsOutROI;
-    helper::WriteAccessor< Data<helper::vector<Edge> > > edgesOutROI = f_edgesOutROI;
-    helper::WriteAccessor< Data<helper::vector<Triangle> > > trianglesOutROI = f_trianglesOutROI;
-    helper::WriteAccessor< Data<helper::vector<Quad> > > quadsOutROI = f_quadsOutROI;
-    helper::WriteAccessor< Data<helper::vector<Tetra> > > tetrahedraOutROI = f_tetrahedraOutROI;
+    helper::WriteOnlyAccessor< Data<VecCoord > > pointsOutROI = f_pointsOutROI;
+    helper::WriteOnlyAccessor< Data<helper::vector<Edge> > > edgesOutROI = f_edgesOutROI;
+    helper::WriteOnlyAccessor< Data<helper::vector<Triangle> > > trianglesOutROI = f_trianglesOutROI;
+    helper::WriteOnlyAccessor< Data<helper::vector<Quad> > > quadsOutROI = f_quadsOutROI;
+    helper::WriteOnlyAccessor< Data<helper::vector<Tetra> > > tetrahedraOutROI = f_tetrahedraOutROI;
 
     // Clear lists
     indices.clear();
