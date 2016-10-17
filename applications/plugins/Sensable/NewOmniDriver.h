@@ -114,7 +114,7 @@ struct NewOmniData
 
 struct AllNewOmniData
 {
-    vector<NewOmniData> omniData;
+    helper::vector<NewOmniData> omniData;
 } ;
 
 /**

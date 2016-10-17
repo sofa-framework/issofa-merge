@@ -82,7 +82,7 @@ struct DeviceData
 
 struct OmniData
 {
-    vector<ForceFeedback*> forceFeedbacks;
+    helper::vector<ForceFeedback*> forceFeedbacks;
     int forceFeedbackIndice;
     simulation::Node *context;
 
@@ -134,7 +134,7 @@ public:
     virtual void draw();
 	virtual void draw(const core::visual::VisualParams*) override;
 
-    void setForceFeedbacks(vector<ForceFeedback*> ffs);
+    void setForceFeedbacks(helper::vector<ForceFeedback*> ffs);
 
     void onKeyPressedEvent(core::objectmodel::KeypressedEvent *);
     void onKeyReleasedEvent(core::objectmodel::KeyreleasedEvent *);

@@ -370,7 +370,7 @@ void OmniDriver::cleanup()
     isInitialized = false;
 }
 
-void OmniDriver::setForceFeedbacks(vector<ForceFeedback*> ffs)
+void OmniDriver::setForceFeedbacks(helper::vector<ForceFeedback*> ffs)
 {
     data.forceFeedbacks.clear();
     for (int i=0; i<ffs.size(); i++)
@@ -397,7 +397,7 @@ void OmniDriver::bwdInit()
     // depending on toolCount, search either the first force feedback, or the feedback with indice "0"
     simulation::Node *groot = dynamic_cast<simulation::Node *>(context->getRootContext()); // access to current node
 
-    vector<ForceFeedback*> ffs;
+    helper::vector<ForceFeedback*> ffs;
     groot->getTreeObjects<ForceFeedback>(&ffs);
     sout << ffs.size()<<" ForceFeedback objects found"<<sendl;
     setForceFeedbacks(ffs);
