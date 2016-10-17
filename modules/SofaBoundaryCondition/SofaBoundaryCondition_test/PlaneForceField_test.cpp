@@ -51,6 +51,7 @@ struct PlaneForceField_test : public Sofa_test<typename _DataTypes::Real>
     typedef _DataTypes DataTypes;
 
     typedef typename DataTypes::VecCoord VecCoord;
+    typedef typename DataTypes::VecReal VecReal;
     typedef typename DataTypes::Coord Coord;
     typedef typename DataTypes::Deriv Deriv;
     typedef typename DataTypes::CPos CPos;
@@ -169,7 +170,7 @@ struct PlaneForceField_test : public Sofa_test<typename _DataTypes::Real>
 
         /*Create the plane force field*/
         planeForceFieldSPtr = New<PlaneForceFieldType>();
-        planeForceFieldSPtr->planeD.setValue(0);
+        planeForceFieldSPtr->planeD.setValue(VecReal(1, Real(0)));
 
         DPos normal;
         normal[0]=1;
