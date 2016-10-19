@@ -101,8 +101,8 @@ SOFA_CONSTRAINT_API void UncoupledConstraintCorrection< defaulttype::Rigid3Types
             usedComp.push_back(dt2 / massValue.mass);
         }
 
-        usedComp.push_back(dt2 / massValue.mass);
-        usedComp.push_back(dt2 * massValue.invInertiaMassMatrix[0][0]);
+        //usedComp.push_back(dt2 / massValue.mass);
+         usedComp.push_back(dt2 * massValue.invInertiaMassMatrix[0][0]);
         usedComp.push_back(dt2 * massValue.invInertiaMassMatrix[0][1]);
         usedComp.push_back(dt2 * massValue.invInertiaMassMatrix[0][2]);
         usedComp.push_back(dt2 * massValue.invInertiaMassMatrix[1][1]);
