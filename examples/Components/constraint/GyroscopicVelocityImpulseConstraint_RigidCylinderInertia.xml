@@ -1,0 +1,26 @@
+<Node name="RigidCylinder" >
+  <EulerImplicit rayleighStiffness="0" rayleighMass="0" />
+  <LULinearSolver />
+  <MechanicalObject template="Rigid" name="ms" position="0 0 0 0 0 0 1" velocity="0 0 0 0 0.1 10" showObject="1" />
+  <UniformRigidMass name="RigidMass" mass="1 1 [0.008416676 0 0,0 0.041416667 0,0 0 0.03516666]"
+                    useGyroscopicExplicit="false"
+                    maxGyroscopicForce="0.0" />
+  <GyroscopicVelocityImpulseConstraint name="GyroscopicImpulse" active="true" />
+  <RigidMassComplianceEngine name="Compliance" template="Rigid"
+                             rigidMass="@RigidMass.mass" rigidPosition="@ms.free_position" rigidComplianceUnzipped="1 1 0 0 1 0 1"/>
+  <UncoupledConstraintCorrection compliance="@Compliance.rigidComplianceUnzipped" />
+  <ConstantForceField name="frameFF" points="0" force="0 0 0 0.0 0.0 0.0" arrowSizeCoef="0.00006"/>
+
+  <Node name="Cylinder" >
+    <GenerateCylinder name="cylinder" template="Vec3d" radius="0.2" height="1.0" origin="0.0 0.0 0.0"/>
+    <TransformEngine name="transform" input_position="@cylinder.output_position"
+                     translation="0.0 0.0 0.0" rotation="0 90 0"/>
+    <TetrahedronSetTopologyContainer position="@transform.output_position"
+                                     tetrahedra="@cylinder.tetrahedra" />
+    <MechanicalObject template="Vec3d" position="@transform.output_position"
+                      rest_position="@transform.output_position"/>
+    <TetrahedronSetGeometryAlgorithms drawTriangles="true" />
+    <RigidMapping />
+  </Node>
+  
+</Node>

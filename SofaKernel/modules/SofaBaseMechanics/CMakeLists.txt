@@ -7,6 +7,8 @@ set(HEADER_FILES
     BarycentricMapping.inl
     DiagonalMass.h
     DiagonalMass.inl
+    GyroscopicVelocityImpulseConstraint.h
+    GyroscopicVelocityImpulseConstraint.inl
     IdentityMapping.h
     IdentityMapping.inl
     MappedObject.h
@@ -17,6 +19,8 @@ set(HEADER_FILES
     SubsetMapping.inl
     UniformMass.h
     UniformMass.inl
+    UniformRigidMass.h
+    UniformRigidMass.inl
     config.h
     initBaseMechanics.h
 )
@@ -24,11 +28,13 @@ set(HEADER_FILES
 set(SOURCE_FILES
     BarycentricMapping.cpp
     DiagonalMass.cpp
+    GyroscopicVelocityImpulseConstraint.cpp
     IdentityMapping.cpp
     MappedObject.cpp
     MechanicalObject.cpp
     SubsetMapping.cpp
     UniformMass.cpp
+    UniformRigidMass.cpp
     initBaseMechanics.cpp
 )
 

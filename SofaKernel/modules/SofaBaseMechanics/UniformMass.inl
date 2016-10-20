@@ -215,7 +215,7 @@ void UniformMass<DataTypes, MassType>::handleTopologyChange()
                 if ( handleTopoChange.getValue() && m_doesTopoChangeAffect)
                 {
                     MassType* m = mass.beginEdit();
-                    *m = ( ( typename DataTypes::Real ) totalMass.getValue() / mstate->getSize() );
+                    *m = MassType( ( typename DataTypes::Real ) totalMass.getValue() / mstate->getSize() );
                     mass.endEdit();
                 }
                 break;
@@ -224,9 +224,14 @@ void UniformMass<DataTypes, MassType>::handleTopologyChange()
                 if ( handleTopoChange.getValue() && m_doesTopoChangeAffect)
                 {
                     if (!preserveTotalMass.getValue())
-                        totalMass.setValue (mstate->getSize() * (Real)mass.getValue() );
+                    {
+                        sofa::defaulttype::MassAccessor<MassType> accessor;
+                        totalMass.setValue (mstate->getSize() * (Real)accessor( mass.getValue() ) );
+                    }
                     else
+                    {
                         mass.setValue( static_cast< MassType >( ( typename DataTypes::Real ) totalMass.getValue() / mstate->getSize()) );
+                    }
                 }
                 break;
 
@@ -468,7 +473,8 @@ void UniformMass<DataTypes, MassType>::addMToMatrix (const MechanicalParams *mpa
 template <class DataTypes, class MassType>
 SReal UniformMass<DataTypes, MassType>::getElementMass ( unsigned int ) const
 {
-    return ( SReal ) ( mass.getValue() );
+    sofa::defaulttype::MassAccessor<MassType> accessor;
+    return ( SReal ) ( accessor( mass.getValue() ) );
 }
 
 

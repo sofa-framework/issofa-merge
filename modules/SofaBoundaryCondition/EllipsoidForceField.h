@@ -29,6 +29,7 @@
 #include <sofa/core/behavior/ForceField.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/objectmodel/Data.h>
+#include <sofa/defaulttype/RigidTypes.h>
 
 
 namespace sofa
@@ -60,6 +61,8 @@ public:
     typedef typename DataTypes::VecCoord    VecCoord    ;
     typedef typename DataTypes::VecDeriv    VecDeriv    ;
     typedef typename DataTypes::VecReal     VecReal     ;
+    typedef typename DataTypes::CPos        CPos        ;
+    typedef typename DataTypes::DPos        DPos        ;
     typedef Data<VecCoord>                  DataVecCoord;
     typedef Data<VecDeriv>                  DataVecDeriv;
 
@@ -97,12 +100,13 @@ protected:
 
 public:
 
-    Data<Coord> center;
-    Data<Coord> vradius;
+    Data<CPos> center;
+    Data<CPos> vradius;
     Data<Real> stiffness;
     Data<Real> damping;
     Data<defaulttype::Vec3f> color;
     Data<bool> bDraw;
+    Data<int>  nbContact;
 protected:
     EllipsoidForceField()
         : contacts(initData(&contacts,"contacts", "Contacts"))
@@ -112,6 +116,7 @@ protected:
         , damping(initData(&damping, (Real)5, "damping", "force damping"))
         , color(initData(&color, defaulttype::Vec3f(0.0f,0.5f,1.0f), "color", "ellipsoid color"))
         , bDraw(initData(&bDraw, true, "draw", "enable/disable drawing of the ellipsoid"))
+        , nbContact(initData(&nbContact, (int)0, "nbContact", "number of contact outside ellipsoid"))
     {
     }
 public:
@@ -137,6 +142,8 @@ public:
         return 0.0;
     }
 
+    virtual void addKToMatrix(sofa::defaulttype::BaseMatrix * mat, SReal kFactor, unsigned int &offset);
+
     void draw(const core::visual::VisualParams* vparams);
 };
 
@@ -146,11 +153,15 @@ public:
 extern template class SOFA_BOUNDARY_CONDITION_API EllipsoidForceField<sofa::defaulttype::Vec3dTypes>;
 extern template class SOFA_BOUNDARY_CONDITION_API EllipsoidForceField<sofa::defaulttype::Vec2dTypes>;
 extern template class SOFA_BOUNDARY_CONDITION_API EllipsoidForceField<sofa::defaulttype::Vec1dTypes>;
+extern template class SOFA_BOUNDARY_CONDITION_API EllipsoidForceField<sofa::defaulttype::Rigid3dTypes>;
+extern template class SOFA_BOUNDARY_CONDITION_API EllipsoidForceField<sofa::defaulttype::Rigid2dTypes>;
 #endif
 #ifndef SOFA_DOUBLE
 extern template class SOFA_BOUNDARY_CONDITION_API EllipsoidForceField<sofa::defaulttype::Vec3fTypes>;
 extern template class SOFA_BOUNDARY_CONDITION_API EllipsoidForceField<sofa::defaulttype::Vec2fTypes>;
 extern template class SOFA_BOUNDARY_CONDITION_API EllipsoidForceField<sofa::defaulttype::Vec1fTypes>;
+extern template class SOFA_BOUNDARY_CONDITION_API EllipsoidForceField<sofa::defaulttype::Rigid3fTypes>;
+extern template class SOFA_BOUNDARY_CONDITION_API EllipsoidForceField<sofa::defaulttype::Rigid2fTypes>;
 #endif
 
 #endif // defined(SOFA_EXTERN_TEMPLATE) && !defined(SOFA_COMPONENT_FORCEFIELD_ELLIPSOIDFORCEFIELD_CPP)

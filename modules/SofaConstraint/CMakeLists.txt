@@ -24,6 +24,8 @@ set(HEADER_FILES
     LocalMinDistance.inl
     PrecomputedConstraintCorrection.h
     PrecomputedConstraintCorrection.inl
+    RigidMassComplianceEngine.h
+    RigidMassComplianceEngine.inl
     SlidingConstraint.h
     SlidingConstraint.inl
     StickContactConstraint.h
@@ -53,6 +55,7 @@ set(SOURCE_FILES
     LinearSolverConstraintCorrection.cpp
     LocalMinDistance.cpp
     PrecomputedConstraintCorrection.cpp
+    RigidMassComplianceEngine.cpp
     SlidingConstraint.cpp
     StickContactConstraint.cpp
     StopperConstraint.cpp
