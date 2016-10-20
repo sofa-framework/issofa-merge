@@ -208,8 +208,16 @@ protected:
     Data< VecIndex > _list_segment;
     bool _partial_list_segment;
 
+    Data<bool> _applyRigidTransFirstBeam;
+    Data<Coord> _rigidTransFirstBeam;
+
+    Data<Real> _rigidY;
+    Data<Real> _rigidZ;
+
     bool _updateStiffnessMatrix;
     bool _assembling;
+
+    Coord m_rigidTsf;
 
     double lastUpdatedStep;
 
