@@ -26,6 +26,7 @@
 #define SOFA_COMPONENT_COLLISION_DISCRETEINTERSECTION_H
 #include "config.h"
 
+#include <sofa/core/collision/DetectionOutput.h>
 #include <sofa/core/collision/Intersection.h>
 #include <sofa/core/collision/IntersectorFactory.h>
 #include <sofa/helper/FnDispatcher.h>
@@ -55,6 +56,9 @@ protected:
 	virtual ~DiscreteIntersection() { }
 	
 public:
+
+    typedef sofa::helper::vector< sofa::core::collision::DetectionOutput > OutputVector;
+
     /// Return the intersector class handling the given pair of collision models, or NULL if not supported.
     /// @param swapModel output value set to true if the collision models must be swapped before calling the intersector.
     virtual core::collision::ElementIntersector* findIntersector(core::CollisionModel* object1, core::CollisionModel* object2, bool& swapModels);
