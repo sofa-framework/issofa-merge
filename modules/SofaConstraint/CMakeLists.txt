@@ -9,11 +9,11 @@ set(HEADER_FILES
     ConstraintAttachBodyPerformer.inl
     ConstraintSolverImpl.h
     ContactDescription.h
+    ContactIdentifier.h
     FreeMotionAnimationLoop.h
     FrictionContact.h
     FrictionContact.inl
     GenericConstraintCorrection.h
-    GenericConstraintCorrection.inl
     GenericConstraintSolver.h
     LCPConstraintSolver.h
     LMDNewProximityIntersection.h
@@ -43,6 +43,7 @@ set(SOURCE_FILES
     ConstraintAnimationLoop.cpp
     ConstraintAttachBodyPerformer.cpp
     ConstraintSolverImpl.cpp
+    ContactIdentifier.cpp
     FreeMotionAnimationLoop.cpp
     FrictionContact.cpp
     GenericConstraintCorrection.cpp
