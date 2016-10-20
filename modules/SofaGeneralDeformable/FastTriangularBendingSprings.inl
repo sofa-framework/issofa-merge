@@ -24,6 +24,7 @@
 ******************************************************************************/
 //
 // C++ Implementation: FastTriangularBendingSprings
+
 //
 // Description:
 //
@@ -45,6 +46,8 @@
 #include <sofa/helper/gl/template.h>
 #include <SofaBaseTopology/TopologyData.inl>
 
+#include <sofa/helper/AdvancedTimer.h>
+
 namespace sofa
 {
 
@@ -53,10 +56,10 @@ namespace component
 
 namespace forcefield
 {
-typedef core::topology::BaseMeshTopology::EdgesInTriangle EdgesInTriangle;
+typedef sofa::core::topology::BaseMeshTopology::EdgesInTriangle EdgesInTriangle;
 
 template< class DataTypes>
-void FastTriangularBendingSprings<DataTypes>::TriangularBSEdgeHandler::applyCreateFunction(unsigned int /*edgeIndex*/, EdgeSpring &ei, const core::topology::BaseMeshTopology::Edge &, const sofa::helper::vector<unsigned int> &, const sofa::helper::vector<double> &)
+void FastTriangularBendingSprings<DataTypes>::TriangularBSEdgeHandler::applyCreateFunction(unsigned int edgeIndex, EdgeSpring &ei, const core::topology::BaseMeshTopology::Edge &, const sofa::helper::vector<unsigned int> &, const sofa::helper::vector<double> &)
 {
     if (ff)
     {
@@ -75,8 +78,11 @@ void FastTriangularBendingSprings<DataTypes>::TriangularBSEdgeHandler::applyTria
     {
         typename MechanicalState::ReadVecCoord restPosition = ff->mstate->readRestPositions();
 
+        const bool quadraticBendingModel = ff->d_quadraticBendingModel.getValue();
+
         helper::WriteAccessor<Data<helper::vector<EdgeSpring> > > edgeData(ff->edgeSprings);
-        
+        const Real bendingStiffness = (Real)ff->f_bendingStiffness.getValue();
+        const bool useRestCurvature = ff->d_useRestCurvature.getValue();
         for (unsigned int i=0; i<triangleAdded.size(); ++i)
         {
             /// edges of the new triangle
@@ -127,7 +133,16 @@ void FastTriangularBendingSprings<DataTypes>::TriangularBSEdgeHandler::applyTria
 					Deriv ve = restPosition[e2]-restPosition[e1];
 
 					if(vp.norm2()>epsilonSq && ve.norm2()>epsilonSq)
-						ei.setEdgeSpring( restPosition.ref(), v1, v2, e1, e2, (Real)ff->f_bendingStiffness.getValue() );
+                    {
+                        if(!quadraticBendingModel)
+                        {
+						    ei.setEdgeSpring( restPosition.ref(), v1, v2, e1, e2, bendingStiffness, useRestCurvature);
+                        }
+                        if(quadraticBendingModel)
+                        {
+                            ei.setEdgeSpringQuadratic( restPosition.ref(), v1, v2, e1, e2, bendingStiffness, useRestCurvature);
+                        }
+                    }
                 }
                 else
                     ei.is_activated = ei.is_initialized = false;
@@ -135,8 +150,6 @@ void FastTriangularBendingSprings<DataTypes>::TriangularBSEdgeHandler::applyTria
         }
     }
 }
-
-
 
 
 template< class DataTypes>
@@ -147,6 +160,12 @@ void FastTriangularBendingSprings<DataTypes>::TriangularBSEdgeHandler::applyTria
     {
         typename MechanicalState::ReadVecCoord restPosition = ff->mstate->readRestPositions();
         helper::vector<EdgeSpring>& edgeData = *(ff->edgeSprings.beginEdit());
+
+        const Real bendingStiffness = (Real)ff->f_bendingStiffness.getValue();
+        const bool useRestCurvature = ff->d_useRestCurvature.getValue();
+
+        const bool quadraticBendingModel = ff->d_quadraticBendingModel.getValue();
+
         for (unsigned int i=0; i<triangleRemoved.size(); ++i)
         {
             /// describe the jth edge index of triangle no i
@@ -228,7 +247,14 @@ void FastTriangularBendingSprings<DataTypes>::TriangularBSEdgeHandler::applyTria
 
 					if(vp.norm2()>epsilonSq && ve.norm2()>epsilonSq)
                     {
-						ei.setEdgeSpring(restPosition.ref(), v1, v2, e1, e2, (Real)ff->f_bendingStiffness.getValue());
+                        if(!quadraticBendingModel)
+                        {
+    						ei.setEdgeSpring(restPosition.ref(), v1, v2, e1, e2, bendingStiffness, useRestCurvature);
+                        }
+                        if(quadraticBendingModel)
+                        {
+                            ei.setEdgeSpringQuadratic( restPosition.ref(), v1, v2, e1, e2, bendingStiffness, useRestCurvature);
+                        }
                     }
 					else
 						ei.is_activated = ei.is_initialized = false;
@@ -299,6 +325,8 @@ void FastTriangularBendingSprings<DataTypes>::TriangularBSEdgeHandler::applyPoin
             const sofa::helper::vector<unsigned int> &shell= ff->_topology->getTrianglesAroundVertex(lastIndexVec[i]);
             for (j=0; j<shell.size(); ++j)
             {
+                Triangle tj = ff->_topology->getTriangle(shell[j]);
+
                 core::topology::BaseMeshTopology::EdgesInTriangle tej = ff->_topology->getEdgesInTriangle(shell[j]);
                 for(unsigned int k=0; k < 3 ; ++k)
                 {
@@ -355,11 +383,14 @@ void FastTriangularBendingSprings<DataTypes>::TriangularBSEdgeHandler::ApplyTopo
 }
 
 template<class DataTypes>
-FastTriangularBendingSprings<DataTypes>::FastTriangularBendingSprings(/*double _ks, double _kd*/)
-    : f_bendingStiffness(initData(&f_bendingStiffness,(SReal) 1.0,"bendingStiffness","bending stiffness of the material"))
-    , d_minDistValidity(initData(&d_minDistValidity,(SReal) 0.000001,"minDistValidity","Distance under which a spring is not valid"))
-    , edgeSprings(initData(&edgeSprings, "edgeInfo", "Internal edge data"))
-    , edgeHandler(NULL)
+FastTriangularBendingSprings<DataTypes>::FastTriangularBendingSprings()
+: f_bendingStiffness(initData(&f_bendingStiffness,(SReal) 1.0,"bendingStiffness","bending stiffness of the material"))
+, d_minDistValidity(initData(&d_minDistValidity,(SReal) 0.000001,"minDistValidity","Distance under which a spring is not valid"))
+, d_useRestCurvature(initData(&d_useRestCurvature, false, "useRestCurvature", "Use rest curvature as the zero potential energy"))
+, d_useOldAddForce(initData(&d_useOldAddForce, false,"useOldAddForce","Use old version of addForce"))
+, d_quadraticBendingModel(initData(&d_quadraticBendingModel, false,"quadraticBendingModel","Use quadratic bending model method for Inextensible Surfaces"))
+, edgeSprings(initData(&edgeSprings, "edgeInfo", "Internal edge data"))
+, edgeHandler(NULL)
 {
     // Create specific handler for EdgeData
     edgeHandler = new TriangularBSEdgeHandler(this, &edgeSprings);
@@ -442,6 +473,7 @@ void FastTriangularBendingSprings<DataTypes>::addForce(const core::MechanicalPar
     f.resize(x.size());
 
     m_potentialEnergy = 0;
+
     for(unsigned i=0; i<edgeInf.size(); i++ )
     {
         m_potentialEnergy += edgeInf[i].addForce(f.wref(),x,v);
@@ -454,12 +486,27 @@ void FastTriangularBendingSprings<DataTypes>::addDForce(const core::MechanicalPa
     const VecDeriv& dx = d_dx.getValue();
     typename MechanicalState::WriteVecDeriv df(d_df);
     const helper::vector<EdgeSpring>& edgeInf = edgeSprings.getValue();
-    const Real kFactor = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
+    const Real kFactor = (Real)mparams->kFactor();
     df.resize(dx.size());
-    for(unsigned i=0; i<edgeInf.size(); i++ )
+
+    sofa::helper::AdvancedTimer::stepBegin("FTBendingSpringAddDForce");
+
+    if(d_useOldAddForce.getValue())
     {
-        edgeInf[i].addDForce(df.wref(),dx,kFactor);
+        for(unsigned i=0; i<edgeInf.size(); i++ )
+        {
+            edgeInf[i].addDForceBugged(df.wref(),dx,kFactor);
+        }
     }
+    else
+    {
+        for(unsigned i=0; i<edgeInf.size(); i++ )
+        {
+            edgeInf[i].addDForce(df.wref(),dx,kFactor);
+        }
+    }
+
+    sofa::helper::AdvancedTimer::stepEnd("FTBendingSpringAddDForce");
 }
 
 
@@ -472,8 +519,6 @@ void FastTriangularBendingSprings<DataTypes>::addKToMatrix(sofa::defaulttype::Ba
         springs[i].addStiffness( mat, offset, scale, this);
     }
 }
-
-
 
 
 template<class DataTypes>

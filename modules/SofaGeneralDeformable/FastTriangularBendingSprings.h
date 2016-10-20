@@ -48,11 +48,12 @@
 #include <sofa/defaulttype/Vec.h>
 #include <sofa/defaulttype/Mat.h>
 
-#include <sofa/defaulttype/Mat.h>
 #include <SofaBaseTopology/TopologyData.h>
-#include <SofaEigen2Solver/EigenSparseMatrix.h>
 
-#define LOCAL_OPTIM
+#include <cassert>
+#include <iostream>
+
+#include <SofaEigen2Solver/EigenSparseMatrix.h>
 
 namespace sofa
 {
@@ -68,6 +69,8 @@ Bending elastic force added between vertices of triangles sharing a common edge.
 
 Adapted from: P. Volino, N. Magnenat-Thalmann. Simple Linear Bending Stiffness in Particle Systems.
 Eurographics Symposium on Computer Animation (SIGGRAPH), pp. 101-105, September 2006. http://www.miralab.ch/repository/papers/165.pdf
+
+EL: Add quadratic bending model for Inextensible Surfaces Eurographics Symposium on Geometry Processing (2006). http://www.cs.columbia.edu/cg/pdfs/9-QuadBend.pdf
 
  @author François Faure, 2012
 */
@@ -86,6 +89,9 @@ public:
     typedef typename DataTypes::Real Real;
     typedef core::behavior::MechanicalState<DataTypes> MechanicalState;
 
+    typedef sofa::core::topology::Edge     Edge;
+    typedef sofa::core::topology::Triangle Triangle;
+    typedef sofa::core::topology::Topology::PointID PointID;
     typedef core::objectmodel::Data<VecCoord> DataVecCoord;
     typedef core::objectmodel::Data<VecDeriv> DataVecDeriv;
 
@@ -97,6 +103,10 @@ public:
     Data<SReal> f_bendingStiffness;  ///< Material parameter
     Data<SReal> d_minDistValidity; ///< Minimal distance to consider a spring valid
 
+    Data<bool>   d_useRestCurvature; ///< Use the rest curvature as the zero energy bending.  
+    Data<bool>   d_useOldAddForce; //warning: bug version
+
+    Data<bool>   d_quadraticBendingModel; /// Use quadratic bending model method for Inextensible Surfaces
 
     /// Searches triangle topology and creates the bending springs
     virtual void init();
@@ -112,25 +122,21 @@ public:
 
 protected:
 
-
-
     class EdgeSpring
     {
     public:
-        enum {A=0,B,C,D};     ///< vertex names as in Volino's paper
+        enum {A=0,B,C,D};                        ///< vertex names as in Volino's paper
         sofa::defaulttype::Vec<4,unsigned> vid;  ///< vertex indices, in circular order
         sofa::defaulttype::Vec<4,Real> alpha;    ///< weight of each vertex in the bending vector
-        //mutable Deriv dpKfact[4];
-        Real lambda;          ///< bending stiffness
-
+        Real lambda;                             ///< bending stiffness
+        Deriv R0;                                ///< rest curvature;
         bool is_activated;
-
         bool is_initialized;
 
         typedef defaulttype::Mat<12,12,Real> StiffnessMatrix;
 
         /// Store the vertex indices and perform all the precomputations
-        void setEdgeSpring( const VecCoord& p, unsigned iA, unsigned iB, unsigned iC, unsigned iD, Real materialBendingStiffness )
+        void setEdgeSpring( const VecCoord& p, unsigned iA, unsigned iB, unsigned iC, unsigned iD, Real materialBendingStiffness, bool computeRestCurvature=false )
         {
             is_activated = is_initialized = true;
 
@@ -159,52 +165,104 @@ protected:
             Real l = (p[vid[C]]-p[vid[D]]).norm();          // distance from C to D
             lambda = (Real)(2./3) * (ha+hb)/(ha*ha*hb*hb) * l * materialBendingStiffness;
 
+            if(computeRestCurvature )
+            {
+                R0 = computeBendingVector( p );
+            }
             //            cerr<<"EdgeInformation::setEdgeSpring, vertices = " << vid << endl;
+        }
+
+        /// For each edge includes between two triangles -> calculate coefficients "coef" and "K0" used in Matrix Q(ei) function edge ei
+        void setEdgeSpringQuadratic( const VecCoord& p, unsigned iA, unsigned iB, unsigned iC, unsigned iD, Real materialBendingStiffness, bool computeRestCurvature=false )
+        {
+            is_activated = is_initialized = true;
+ 
+            vid[A]=iD;  ///< WARNING vertex names and orientation as in Bergou's paper, different compared Linear method from Volino's paper
+            vid[B]=iC;
+            vid[C]=iA;
+            vid[D]=iB;
+
+            Deriv e0 = p[vid[B]]-p[vid[A]];
+            Deriv e1 = p[vid[C]]-p[vid[A]];
+            Deriv e2 = p[vid[D]]-p[vid[A]];
+            Deriv e3 = p[vid[C]]-p[vid[B]];
+            Deriv e4 = p[vid[D]]-p[vid[B]];
+
+            double c01 = cotTheta( e0, e1);
+            double c02 = cotTheta( e0, e2);
+            double c03 = cotTheta(-e0, e3);
+            double c04 = cotTheta(-e0, e4);
+
+            alpha[A] = c03+c04;
+            alpha[B] = c01+c02;
+            alpha[C] = -c01-c03;
+            alpha[D] = -c02-c04;
+
+            double A0 = 0.5 * cross(e0,e1).norm();
+            double A1 = 0.5 * cross(e0,e2).norm();
+
+            lambda = ( 3. / (2.*(A0+A1))) * materialBendingStiffness;
+
+            if(computeRestCurvature )
+            {
+                R0 = computeBendingVector( p );
+            }
+        }
+
+        double cotTheta(const Deriv& v, const Deriv& w)
+        {
+            assert(v.norm() > 0);
+            assert(w.norm () > 0);
+            const double cosTheta = dot(v,w);
+            const double sinTheta = cross(v,w).norm();
+
+            return (cosTheta / sinTheta);
+        }
+
+        Deriv computeBendingVector( const VecCoord& p) const
+        {
+           return ( p[vid[A]]*alpha[A] +  p[vid[B]]*alpha[B] +  p[vid[C]]*alpha[C] +  p[vid[D]]*alpha[D] );
         }
 
         /// Accumulates force and return potential energy
         Real addForce( VecDeriv& f, const VecCoord& p, const VecDeriv& /*v*/) const
         {
             if( !is_activated ) return 0;
-            Deriv R = p[vid[A]]*alpha[A] +  p[vid[B]]*alpha[B] +  p[vid[C]]*alpha[C] +  p[vid[D]]*alpha[D];
-            f[vid[A]] -= R * lambda * alpha[A];
-            f[vid[B]] -= R * lambda * alpha[B];
-            f[vid[C]] -= R * lambda * alpha[C];
-            f[vid[D]] -= R * lambda * alpha[D];
-            return R * R * lambda * (Real)0.5;
+
+            Deriv R = computeBendingVector(p);
+            R -= R0;
+            f[vid[A]] -= R * (lambda * alpha[A]);
+            f[vid[B]] -= R * (lambda * alpha[B]);
+            f[vid[C]] -= R * (lambda * alpha[C]);
+            f[vid[D]] -= R * (lambda * alpha[D]);
+
+            return (R * R) * lambda * (Real)0.5;
         }
 
-#ifdef LOCAL_OPTIM
-        // Optimized version of addDForce
-        void addDForce( VecDeriv& df, const VecDeriv& dp, Real kfactor) const
+        void addDForceBugged( VecDeriv& df, const VecDeriv& dp, Real kfactor) const
         {
             using namespace sofa::component::topology;
             if( !is_activated ) return;
 
-            Deriv dpKfact[4];
-
-            dpKfact[0] = dp[vid[0]] * lambda * kfactor * alpha[0];
-            dpKfact[1] = dp[vid[1]] * lambda * kfactor * alpha[1];
-            dpKfact[2] = dp[vid[2]] * lambda * kfactor * alpha[2];
-            dpKfact[3] = dp[vid[3]] * lambda * kfactor * alpha[3];
-
-            for( unsigned j=0; j<4; ++j)
-            {
-                for( unsigned k=0; k<4; ++k)
-                {
-                    df[vid[j]] -= dpKfact[k] * alpha[j];
-                }
-            }
+            Deriv R = (dp[vid[0]] * (kfactor *  alpha[0]) + dp[vid[1]] * (kfactor * alpha[1]) + dp[vid[2]] * (kfactor * alpha[2]) + dp[vid[3]] * (kfactor * alpha[3]));
+            df[vid[0]] -= R*alpha[0];
+            df[vid[1]] -= R*alpha[1];
+            df[vid[2]] -= R*alpha[2];
+            df[vid[3]] -= R*alpha[3];
         }
-#else
+
+        // Optimized version of addDForce
         void addDForce( VecDeriv& df, const VecDeriv& dp, Real kfactor) const
         {
-	        if( !is_activated ) return;
-	        for( unsigned j=0; j<4; j++ )
-	            for( unsigned k=0; k<4; k++ )
-	                df[vid[j]] -= dp[vid[k]] * lambda * alpha[j] * alpha[k] * kfactor;
+            if( !is_activated ) return;
+            //Deriv R = computeBendingVector(dp);
+            //R *= (lambda*kfactor);
+            Deriv R = (dp[vid[0]] * (kfactor *  alpha[0]) + dp[vid[1]] * (kfactor * alpha[1]) + dp[vid[2]] * (kfactor * alpha[2]) + dp[vid[3]] * (kfactor * alpha[3]))*lambda;
+            df[vid[0]] -= R*alpha[0];
+            df[vid[1]] -= R*alpha[1];
+            df[vid[2]] -= R*alpha[2];
+            df[vid[3]] -= R*alpha[3];
         }
-#endif
 
         /// Stiffness matrix assembly
         void addStiffness( sofa::defaulttype::BaseMatrix *bm, unsigned int offset, SReal scale, core::behavior::ForceField< _DataTypes>* ff ) const
@@ -254,10 +312,7 @@ protected:
         }
     };
 
-    /// The list of edge springs, one for each edge between two triangles
-    sofa::component::topology::EdgeData<helper::vector<EdgeSpring> > edgeSprings;
-
-    class TriangularBSEdgeHandler : public topology::TopologyDataHandler<core::topology::BaseMeshTopology::Edge, helper::vector<EdgeSpring> >
+    class TriangularBSEdgeHandler : public sofa::component::topology::TopologyDataHandler<core::topology::BaseMeshTopology::Edge,helper::vector<EdgeSpring> >
     {
     public:
         typedef typename FastTriangularBendingSprings<DataTypes>::EdgeSpring EdgeSpring;
@@ -293,20 +348,22 @@ protected:
 
     protected:
         FastTriangularBendingSprings<DataTypes>* ff;
-    };
+    };    
 
+protected: // FastTriangularBendingSprings members
     sofa::core::topology::BaseMeshTopology* _topology;
 
-
-    FastTriangularBendingSprings();
-
-    virtual ~FastTriangularBendingSprings();
-
-    sofa::component::topology::EdgeData<helper::vector<EdgeSpring> > &getEdgeInfo() {return edgeSprings;}
+    /// The list of edge springs, one for each edge between two triangles
+    sofa::component::topology::EdgeData<helper::vector<EdgeSpring> > edgeSprings;
 
     TriangularBSEdgeHandler* edgeHandler;
 
     SReal m_potentialEnergy;
+
+    FastTriangularBendingSprings();
+    virtual ~FastTriangularBendingSprings();
+
+    sofa::component::topology::EdgeData<helper::vector<EdgeSpring> > &getEdgeInfo() {return edgeSprings;}
 };
 
 #if defined(SOFA_EXTERN_TEMPLATE) && !defined(SOFA_COMPONENT_FORCEFIELD_FastTriangularBendingSprings_CPP)
