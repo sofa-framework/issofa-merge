@@ -26,6 +26,7 @@
 #define SOFA_COMPONENT_ENGINE_MATHOP_INL
 
 #include <SofaGeneralEngine/MathOp.h>
+#include <sofa/simulation/AnimateBeginEvent.h>
 
 namespace sofa
 {
@@ -96,6 +97,50 @@ struct MathOpDiv
             *out = in[0];
             for (unsigned int i=1;i<in.size();++i)
                 *out /= in[i];
+        }
+    }
+};
+
+template<typename T>
+struct MathOpVMul
+{
+    static const char* Name() { return "*"; }
+    void operator()(T* out, const helper::vector<T>& in)
+    {
+        *out = in[0];
+        for (unsigned int i=1;i<in.size();++i)
+        {
+            for (unsigned int j=0;j<in[i].size();++j)
+            {
+                (*out)[j] *= in[i][j];
+            }
+        }
+    }
+};
+
+template<typename T>
+struct MathOpVDiv
+{
+    static const char* Name() { return "/"; }
+    void operator()(T* out, const helper::vector<T>& in)
+    {
+        if (in.size() == 1)
+        {
+            for (unsigned int j=0;j<in[0].size();++j)
+            {
+                (*out)[j] = 1/(in[0][j]);
+            }
+        }
+        else
+        {
+            *out = in[0];
+            for (unsigned int i=1;i<in.size();++i)
+            {
+                for (unsigned int j=0;j<in[i].size();++j)
+                {
+                    (*out)[j] /= in[i][j];
+                }
+            }
         }
     }
 };
@@ -247,8 +292,9 @@ class MathOpTraits<double> : public MathOpTraitsReal<double> {};
 template<typename T>
 struct MathOpTraitsVecReal
 {
-    typedef 
-        std::pair< MathOpAdd <T>, MathOpSub <T> >
+    typedef std::pair<
+        std::pair< MathOpAdd <T>, MathOpSub <T> > ,
+        std::pair< MathOpVMul <T>, MathOpVDiv <T> > >
         Ops;
 };
 
@@ -316,7 +362,11 @@ struct MathOpApply
                 size = in[0]->size();
                 for (unsigned int idin = 1; idin < nbin; ++idin)
                 {
-                    if (in[idin]->size() < size)
+                    if (in[idin]->size() == 0)
+                    {
+                        size = 0;
+                    }
+                    else if (size > 0 && in[idin]->size() > size)
                     {
                         size = in[idin]->size();
                     }
@@ -329,7 +379,7 @@ struct MathOpApply
             {
                 for (unsigned int idin = 0; idin < nbin; ++idin)
                 {
-                    values[idin] = (*in[idin])[idv];
+                    values[idin] = (*in[idin])[idv < in[idin]->size() ? idv : in[idin]->size()-1];
                 }
                 Value o;
                 op(&o, values);
@@ -374,6 +424,7 @@ MathOp<VecT>::MathOp()
     //ops.setSelectedItem(0);
     f_op.endEdit();
     createInputs();
+    this->f_listening.setValue(false);
 }
 
 template <class VecT>
@@ -466,6 +517,15 @@ void MathOp<VecT>::reinit()
     createInputs();
 
     update();
+}
+
+template <class VecT>
+void MathOp<VecT>::handleEvent(core::objectmodel::Event* e)
+{
+    if( dynamic_cast<simulation::AnimateBeginEvent*>(e) )
+    {
+        update();
+    }     
 }
 
 template <class VecT>
