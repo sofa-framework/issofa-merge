@@ -126,7 +126,7 @@ void ParticlesRepulsionForceField<DataTypes>::addForce(const core::MechanicalPar
             Deriv n = (x[j]-x[i]);
             Real d2 = n.norm2();
 
-            if (d2 < h2)
+            if (d2!=0.0 && d2 < h2)
             {
                 Deriv vi = v[j]-v[i];
                 Real d = sqrt(d2);
@@ -172,7 +172,7 @@ void ParticlesRepulsionForceField<DataTypes>::addDForce(const core::MechanicalPa
             Deriv n = (x[j]-x[i]);
             Real d2 = n.norm2();
 
-            if (d2 < h2)
+            if (d2!=0.0 && d2 < h2)
             {
                 Deriv dxi = dx[j]-dx[i];
                 dforce = n*((ks * dot(dxi,n))/d2);
@@ -184,6 +184,12 @@ void ParticlesRepulsionForceField<DataTypes>::addDForce(const core::MechanicalPa
     }
 
     d_df.endEdit();
+}
+
+template<class DataTypes>
+void ParticlesRepulsionForceField<DataTypes>::addKToMatrix(const sofa::core::MechanicalParams* /*mparams*/, const sofa::core::behavior::MultiMatrixAccessor* /*matrix*/)
+{
+    return;
 }
 
 template<class DataTypes>
