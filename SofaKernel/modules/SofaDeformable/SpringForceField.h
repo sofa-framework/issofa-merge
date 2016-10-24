@@ -57,14 +57,15 @@ public:
     Real  kd;      ///< damping factor
     Real  initpos; ///< rest length of the spring
     bool elongationOnly; //only forbid elongation, not compression
+    bool enabled; //false to disable this spring (i.e. broken)
 
-    LinearSpring(int m1=0, int m2=0, double ks=0.0, double kd=0.0, double initpos=0.0, bool noCompression=false)
-        : m1(m1), m2(m2), ks((Real)ks), kd((Real)kd), initpos((Real)initpos), elongationOnly(noCompression)
+    LinearSpring(int m1=0, int m2=0, double ks=0.0, double kd=0.0, double initpos=0.0, bool noCompression=false, bool enabled=true)
+        : m1(m1), m2(m2), ks((Real)ks), kd((Real)kd), initpos((Real)initpos), elongationOnly(noCompression), enabled(enabled)
     {
     }
 
-    LinearSpring(int m1, int m2, float ks, float kd=0, float initpos=0, bool noCompression=false)
-        : m1(m1), m2(m2), ks((Real)ks), kd((Real)kd), initpos((Real)initpos), elongationOnly(noCompression)
+    LinearSpring(int m1, int m2, float ks, float kd=0, float initpos=0, bool noCompression=false, bool enabled=true)
+        : m1(m1), m2(m2), ks((Real)ks), kd((Real)kd), initpos((Real)initpos), elongationOnly(noCompression), enabled(enabled)
     {
     }
 

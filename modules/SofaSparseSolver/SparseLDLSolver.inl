@@ -59,7 +59,7 @@ void SparseLDLSolver<TMatrix,TVector,TThreadManager>::invert(Matrix& M) {
     if (f_saveMatrixToFile.getValue()) {
         std::ofstream f;
         char name[100];
-        sprintf(name, "matrixInLDLInvert_%04d.txt", numStep);
+        sprintf(name, "LDL_matrix_%04d.txt", numStep);
         f.open(name);
         f << M;
         f.close();
@@ -74,7 +74,95 @@ void SparseLDLSolver<TMatrix,TVector,TThreadManager>::invert(Matrix& M) {
     int * M_rowind = (int *) &Mfiltered.getColsIndex()[0];
     Real * M_values = (Real *) &Mfiltered.getColsValue()[0];
 
-    Inherit::factorize(n,M_colptr,M_rowind,M_values,(InvertData *) this->getMatrixInvertData(&M));
+    InvertData * data = (InvertData *) this->getMatrixInvertData(&M);
+    Inherit::factorize(n,M_colptr,M_rowind,M_values,data);
+
+    if (f_saveMatrixToFile.getValue()) {
+        { // L
+            std::ofstream f;
+            char name[100];
+            sprintf(name, "LDL_Lcsr_%04d.txt", numStep);
+            f.open(name);
+            f << data->n << std::endl;
+            f << data->L_colptr << std::endl;
+            f << data->L_rowind << std::endl;
+            f << data->L_values << std::endl;
+            f << std::endl;
+            f.close();
+        }
+        { // Dinv
+            std::ofstream f;
+            char name[100];
+            sprintf(name, "LDL_Dinv_%04d.txt", numStep);
+            f.open(name);
+            f << data->n << std::endl;
+            f << data->invD << std::endl;
+            f << std::endl;
+            f.close();
+        }
+        { // Perm
+            std::ofstream f;
+            char name[100];
+            sprintf(name, "LDL_Perm_%04d.txt", numStep);
+            f.open(name);
+            f << data->perm << std::endl;
+            f << data->invperm << std::endl;
+            f << std::endl;
+            f.close();
+        }
+        { // M pattern
+            std::ofstream f;
+            char name[100];
+            sprintf(name, "LDL_Mpattern_%04d.txt", numStep);
+            f.open(name);
+            const int nbRow = Mfiltered.rowSize();
+            const int nbCol = Mfiltered.colSize();
+            for (int r = 0; r < nbRow; ++r)
+            {
+                const int rBegin = M_colptr[r];
+                const int rEnd = M_colptr[r+1];
+                int c = 0;
+                f << '[';
+                for (int it = rBegin; it != rEnd; ++it)
+                {
+                    int col = M_rowind[it];
+                    for (;c < col; ++c) f << ' ';
+                    f << 'x'; ++c;
+                }
+                for (;c < nbCol; ++c) f << ' ';
+                f << ']';
+                f << std::endl;
+            }
+            f << std::endl;
+            f.close();
+        }
+        { // L pattern
+            std::ofstream f;
+            char name[100];
+            sprintf(name, "LDL_Lpattern_%04d.txt", numStep);
+            f.open(name);
+            const int nbRow = Mfiltered.rowSize();
+            const int nbCol = Mfiltered.colSize();
+            for (int r = 0; r < nbRow; ++r)
+            {
+                const int rBegin = data->L_colptr[r];
+                const int rEnd = data->L_colptr[r+1];
+                int c = 0;
+                f << '[';
+                for (int it = rBegin; it != rEnd; ++it)
+                {
+                    int col = data->L_rowind[it];
+                    for (;c < col; ++c) f << ' ';
+                    f << 'x'; c++;
+                }
+                for (;c < nbCol; ++c) f << ' ';
+                f << ']';
+                f << std::endl;
+            }
+            f << std::endl;
+            f.close();
+        }
+    }
 
     numStep++;
 }
@@ -84,15 +172,25 @@ template<class TMatrix, class TVector, class TThreadManager>
 bool SparseLDLSolver<TMatrix,TVector,TThreadManager>::addJMInvJtLocal(TMatrix * M, ResMatrixType * result,const JMatrixType * J, double fact) {
     if (J->rowSize()==0) return true;
 
-    InvertData * data = (InvertData *) this->getMatrixInvertData(M);
-
-    Jdense.clear();
-    Jdense.resize(J->rowSize(),data->n);
-    Jminv.resize(J->rowSize(),data->n);
-
+    Jlocal2global.clear();
     for (typename SparseMatrix<Real>::LineConstIterator jit = J->begin() , jitend = J->end(); jit != jitend; ++jit) {
         int l = jit->first;
-        Real * line = Jdense[l];
+        Jlocal2global.push_back(l);
+    }
+
+    if (Jlocal2global.empty()) return true;
+
+    const unsigned int JlocalRowSize = (unsigned int)Jlocal2global.size();
+
+    InvertData * data = (InvertData *) this->getMatrixInvertData(M);
+
+    JLinv.clear();
+    JLinv.resize(J->rowSize(),data->n);
+    JLinvDinv.resize(J->rowSize(),data->n);
+
+    unsigned int localRow = 0;
+    for (typename SparseMatrix<Real>::LineConstIterator jit = J->begin() , jitend = J->end(); jit != jitend; ++jit, ++localRow) {
+        Real * line = JLinv[localRow];
         for (typename SparseMatrix<Real>::LElementConstIterator it = jit->second.begin(), i2end = jit->second.end(); it != i2end; ++it) {
             int col = data->invperm[it->first];
             double val = it->second;
@@ -102,8 +200,8 @@ bool SparseLDLSolver<TMatrix,TVector,TThreadManager>::addJMInvJtLocal(TMatrix * 
     }
 
     //Solve the lower triangular system
-    for (unsigned c=0;c<(unsigned)J->rowSize();c++) {
-        Real * line = Jdense[c];
+    for (unsigned c=0;c<JlocalRowSize;c++) {
+        Real * line = JLinv[c];
 
         for (int j=0; j<data->n; j++) {
             for (int p = data->LT_colptr[j] ; p<data->LT_colptr[j+1] ; p++) {
@@ -115,76 +213,30 @@ bool SparseLDLSolver<TMatrix,TVector,TThreadManager>::addJMInvJtLocal(TMatrix * 
     }
 
     //apply diagonal
-    for (unsigned j=0; j<(unsigned)J->rowSize(); j++) {
-        Real * lineD = Jdense[j];
-        Real * lineM = Jminv[j];
-        for (unsigned i=0;i<(unsigned)J->colSize();i++) {
+    for (unsigned j=0; j<JlocalRowSize; j++) {
+        Real * lineD = JLinv[j];
+        Real * lineM = JLinvDinv[j];
+        for (unsigned i=0;i<(unsigned)data->n;i++) {
             lineM[i] = lineD[i] * data->invD[i];
         }
     }
 
-    for (unsigned j=0; j<(unsigned)J->rowSize(); j++) {
-        Real * lineJ = Jminv[j];
-        for (unsigned i=j;i<(unsigned)J->rowSize();i++) {
-            Real * lineI = Jdense[i];
+    for (unsigned j=0; j<JlocalRowSize; j++) {
+        Real * lineJ = JLinvDinv[j];
+        int globalRowJ = Jlocal2global[j];
+        for (unsigned i=j;i<JlocalRowSize;i++) {
+            Real * lineI = JLinv[i];
+            int globalRowI = Jlocal2global[i];
 
             double acc = 0.0;
-            for (unsigned k=0;k<(unsigned)J->colSize();k++) {
+            for (unsigned k=0;k<(unsigned)data->n;k++) {
                 acc += lineJ[k] * lineI[k];
             }
-            result->add(j,i,acc*fact);
-            if(i!=j) result->add(i,j,acc*fact);
+            acc *= fact;
+            result->add(globalRowJ,globalRowI,acc);
+            if(globalRowI!=globalRowJ) result->add(globalRowI,globalRowJ,acc);
         }
     }
-
-
-//    //Solve the lower triangular system
-//    res.resize(data->n);
-//    for (typename SparseMatrix<Real>::LineConstIterator jit = J->begin() , jitend = J->end(); jit != jitend; ++jit) {
-//        int row = jit->first;
-
-//        line.clear();
-//        line.resize(data->n);
-
-//        for (typename SparseMatrix<Real>::LElementConstIterator it = jit->second.begin(), i2end = jit->second.end(); it != i2end; ++it) {
-//            int col = data->invperm[it->first];
-//            double val = it->second;
-//            line[col] = val;
-//        }
-
-//        for (int j=0; j<data->n; j++) {
-//            for (int p = data->LT_colptr[j] ; p<data->LT_colptr[j+1] ; p++) {
-//                int col = data->LT_rowind[p];
-//                double val = data->LT_values[p];
-//                line[j] -= val * line[col];
-//            }
-//        }
-
-//        for (int j = data->n-1 ; j >= 0 ; j--) {
-//            line[j] *= data->invD[j];
-
-//            for (int p = data->L_colptr[j] ; p < data->L_colptr[j+1] ; p++) {
-//                int col = data->L_rowind[p];
-//                double val = data->L_values[p];
-//                line[j] -= val * line[col];
-//            }
-
-//            res[data->perm[j]] = line[j];
-//        }
-
-//        for (typename SparseMatrix<Real>::LineConstIterator jit = J->begin() , jitend = J->end(); jit != jitend; ++jit) {
-//            int row2 = jit->first;
-//            double acc = 0.0;
-//            for (typename SparseMatrix<Real>::LElementConstIterator i2 = jit->second.begin(), i2end = jit->second.end(); i2 != i2end; ++i2) {
-//                int col2 = i2->first;
-//                double val2 = i2->second;
-//                acc += val2 * res[col2];
-//            }
-//            acc *= fact;
-//            result->add(row2,row,acc);
-//        }
-//    }
-
 
     return true;
 }

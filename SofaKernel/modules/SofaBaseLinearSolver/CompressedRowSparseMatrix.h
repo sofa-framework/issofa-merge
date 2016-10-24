@@ -208,7 +208,7 @@ public:
         else
         {
 #ifdef SPARSEMATRIX_VERBOSE
-            std::cout << /* this->Name()  <<  */": resize("<<nbBRow<<"*"<<NL<<","<<nbBCol<<"*"<<NC<<")"<<std::endl;
+            std::cout << this->Name()  << ": resize("<<nbBRow<<"*"<<NL<<","<<nbBCol<<"*"<<NC<<")"<<std::endl;
 #endif
             nRow = nbBRow*NL;
             nCol = nbBCol*NC;
@@ -228,14 +228,25 @@ public:
         if (compressed && btemp.empty()) return;
         if (!btemp.empty())
         {
-#ifdef SPARSEMATRIX_VERBOSE
-            std::cout << /* this->Name()  <<  */"("<<rowSize()<<","<<colSize()<<"): sort "<<btemp.size()<<" temp blocs."<<std::endl;
-#endif
-            std::sort(btemp.begin(),btemp.end());
-#ifdef SPARSEMATRIX_VERBOSE
-            std::cout << /* this->Name()  <<  */"("<<rowSize()<<","<<colSize()<<"): blocs sorted."<<std::endl;
-#endif
+            compressBtemp();
         }
+        else
+        {
+            compressCSR();
+        }
+        compressed = true;
+    }
+protected:
+    virtual void compressBtemp()
+    {
+#ifdef SPARSEMATRIX_VERBOSE
+        std::cout << this->Name()  << "("<<rowSize()<<","<<colSize()<<"): sort "<<btemp.size()<<" temp blocs."<<std::endl;
+#endif
+        std::sort(btemp.begin(),btemp.end());
+#ifdef SPARSEMATRIX_VERBOSE
+        std::cout << this->Name()  << "("<<rowSize()<<","<<colSize()<<"): blocs sorted."<<std::endl;
+#endif
+
         oldRowIndex.swap(rowIndex);
         oldRowBegin.swap(rowBegin);
         oldColsIndex.swap(colsIndex);
@@ -260,7 +271,7 @@ public:
         while (inRowIndex < EndRow || bRowIndex < EndRow)
         {
 #ifdef SPARSEMATRIX_VERBOSE
-            std::cout << /* this->Name()  <<  */"("<<rowSize()<<","<<colSize()<<"): inRowIndex = "<<inRowIndex<<" , bRowIndex = "<<bRowIndex<<""<<std::endl;
+            std::cout << this->Name()  << "("<<rowSize()<<","<<colSize()<<"): inRowIndex = "<<inRowIndex<<" , bRowIndex = "<<bRowIndex<<""<<std::endl;
 #endif
             if (inRowIndex < bRowIndex)
             {
@@ -292,16 +303,19 @@ public:
                 while (itbtemp != endbtemp && itbtemp->l == bRowIndex)
                 {
                     Index bColIndex = itbtemp->c;
-                    colsIndex.push_back(bColIndex);
-                    colsValue.push_back(itbtemp->value);
+                    Bloc value = itbtemp->value;
                     ++itbtemp;
-                    Bloc& value = colsValue.back();
                     while (itbtemp != endbtemp && itbtemp->c == bColIndex && itbtemp->l == bRowIndex)
                     {
                         value += itbtemp->value;
                         ++itbtemp;
                     }
-                    ++outValId;
+                    if (!traits::empty(value))
+                    {
+                        colsIndex.push_back(bColIndex);
+                        colsValue.push_back(value);
+                        ++outValId;
+                    }
                 }
                 bRowIndex = (itbtemp != endbtemp) ? itbtemp->l : EndRow;
             }
@@ -328,32 +342,38 @@ public:
                     }
                     else if (inColIndex > bColIndex)
                     {
-                        colsIndex.push_back(bColIndex);
-                        colsValue.push_back(itbtemp->value);
+                        Bloc value = itbtemp->value;
                         ++itbtemp;
-                        Bloc& value = colsValue.back();
                         while (itbtemp != endbtemp && itbtemp->c == bColIndex && itbtemp->l == bRowIndex)
                         {
                             value += itbtemp->value;
                             ++itbtemp;
                         }
+                        if (!traits::empty(value))
+                        {
+                            colsIndex.push_back(bColIndex);
+                            colsValue.push_back(value);
+                            ++outValId;
+                        }
                         bColIndex = (itbtemp != endbtemp && itbtemp->l == bRowIndex) ? itbtemp->c : EndCol;
-                        ++outValId;
                     }
                     else
                     {
-                        colsIndex.push_back(inColIndex);
-                        colsValue.push_back(oldColsValue[inRow.begin()]);
+                        Bloc value = oldColsValue[inRow.begin()];
                         ++inRow;
-                        inColIndex = (!inRow.empty()) ? oldColsIndex[inRow.begin()] : EndCol;
-                        Bloc& value = colsValue.back();
                         while (itbtemp != endbtemp && itbtemp->c == bColIndex && itbtemp->l == bRowIndex)
                         {
                             value += itbtemp->value;
                             ++itbtemp;
                         }
+                        if (!traits::empty(value))
+                        {
+                            colsIndex.push_back(inColIndex);
+                            colsValue.push_back(value);
+                            ++outValId;
+                        }
+                        inColIndex = (!inRow.empty()) ? oldColsIndex[inRow.begin()] : EndCol;
                         bColIndex = (itbtemp != endbtemp && itbtemp->l == bRowIndex) ? itbtemp->c : EndCol;
-                        ++outValId;
                     }
                 }
                 ++inRowId;
@@ -363,11 +383,58 @@ public:
         }
         rowBegin.push_back(outValId);
         //#ifdef SPARSEMATRIX_VERBOSE
-        //          std::cout << /* this->Name()  <<  */"("<<rowSize()<<","<<colSize()<<"): compressed " << oldColsIndex.size()<<" old blocs and " << btemp.size() << " temp blocs into " << rowIndex.size() << " lines and " << colsIndex.size() << " blocs."<<std::endl;
+        //          std::cout << this->Name()  << "("<<rowSize()<<","<<colSize()<<"): compressed " << oldColsIndex.size()<<" old blocs and " << btemp.size() << " temp blocs into " << rowIndex.size() << " lines and " << colsIndex.size() << " blocs."<<std::endl;
         //#endif
         btemp.clear();
-        compressed = true;
     }
+    virtual void compressCSR()
+    {
+        Index outValues = 0;
+        Index outRows = 0;
+        for (Index r=0; r<rowIndex.size(); ++r)
+        {
+            Index row = rowIndex[r];
+            Index rBegin = rowBegin[r];
+            Index rEnd = rowBegin[r+1];
+            Index outRBegin = outValues;
+            for (Index p = rBegin; p != rEnd; ++p)
+            {
+                if (!traits::empty(colsValue[p]))
+                {
+                    // keep this value
+                    if (p != outValues)
+                    {
+                        colsValue[outValues] = colsValue[p];
+                        colsIndex[outValues] = colsIndex[p];
+                    }
+                    ++outValues;
+                }
+            }
+            if(outValues != outRBegin)
+            {
+                // keep this row
+                if (r != outRows)
+                {
+                    rowIndex[outRows] = row;
+                }
+                if (r != outRows || rBegin != outRBegin)
+                {
+                    rowBegin[outRows] = outRBegin;
+                }
+                ++outRows;
+            }
+        }
+        if (rowIndex.size() != outRows || colsIndex.size() != outValues)
+        {
+            rowBegin[outRows] = outValues;
+            rowIndex.resize(outRows);
+            rowBegin.resize(outRows+1);
+            colsIndex.resize(outValues);
+            colsValue.resize(outValues);
+        }
+    }
+
+public:
 
     void swap(Matrix& m)
     {
@@ -381,8 +448,6 @@ public:
         rowIndex.swap(m.rowIndex);
         rowBegin.swap(m.rowBegin);
         colsIndex.swap(m.colsIndex);
-        rowBegin.swap(m.rowBegin);
-        colsIndex.swap(m.colsIndex);
         colsValue.swap(m.colsValue);
         btemp.swap(m.btemp);
     }
@@ -391,12 +456,12 @@ public:
     void fullRows()
     {
         compress();
-        if (rowIndex.size() >= nRow) return;
+        if (rowIndex.size() >= nBlocRow) return;
         oldRowIndex.swap(rowIndex);
         oldRowBegin.swap(rowBegin);
-        rowIndex.resize(nRow);
-        rowBegin.resize(nRow+1);
-        for (Index i=0; i<nRow; ++i) rowIndex[i] = i;
+        rowIndex.resize(nBlocRow);
+        rowBegin.resize(nBlocRow+1);
+        for (Index i=0; i<nBlocRow; ++i) rowIndex[i] = i;
         Index j = 0;
         Index b = 0;
         for (Index i=0; i<oldRowIndex.size(); ++i)
@@ -406,7 +471,7 @@ public:
                 rowBegin[j] = b;
         }
         b = oldRowBegin[oldRowBegin.size()-1];
-        for (; j<=nRow; ++j)
+        for (; j<=nBlocRow; ++j)
             rowBegin[j] = b;
     }
 
@@ -431,18 +496,18 @@ public:
             }
             if (b<e) ++ndiag;
         }
-        if (ndiag == nRow) return;
+        if (ndiag == nBlocRow) return;
 
         oldRowIndex.swap(rowIndex);
         oldRowBegin.swap(rowBegin);
         oldColsIndex.swap(colsIndex);
         oldColsValue.swap(colsValue);
-        rowIndex.resize(nRow);
-        rowBegin.resize(nRow+1);
-        colsIndex.resize(oldColsIndex.size()+nRow-ndiag);
-        colsValue.resize(oldColsValue.size()+nRow-ndiag);
+        rowIndex.resize(nBlocRow);
+        rowBegin.resize(nBlocRow+1);
+        colsIndex.resize(oldColsIndex.size()+nBlocRow-ndiag);
+        colsValue.resize(oldColsValue.size()+nBlocRow-ndiag);
         Index nv = 0;
-        for (Index i=0; i<nRow; ++i) rowIndex[i] = i;
+        for (Index i=0; i<nBlocRow; ++i) rowIndex[i] = i;
         Index j = 0;
         for (Index i=0; i<oldRowIndex.size(); ++i)
         {
@@ -476,7 +541,7 @@ public:
             }
             ++j;
         }
-        for (; j<nRow; ++j)
+        for (; j<nBlocRow; ++j)
         {
             rowBegin[j] = nv;
             colsIndex[nv] = j;
@@ -502,16 +567,16 @@ public:
     }
 
     // filtering-out part of a matrix
-    typedef bool filter_fn    (Index   i  , Index   j  , Bloc& val, const Bloc&   ref  );
-    static bool       nonzeros(Index /*i*/, Index /*j*/, Bloc& val, const Bloc& /*ref*/) { return (!traits::empty(val)); }
-    static bool       nonsmall(Index /*i*/, Index /*j*/, Bloc& val, const Bloc&   ref  )
+    typedef bool filter_fn    (Index   i  , Index   j  , Bloc& val, const Real   ref  );
+    static bool       nonzeros(Index /*i*/, Index /*j*/, Bloc& val, const Real /*ref*/) { return (!traits::empty(val)); }
+    static bool       nonsmall(Index /*i*/, Index /*j*/, Bloc& val, const Real   ref  )
     {
         for (Index bi = 0; bi < NL; ++bi)
             for (Index bj = 0; bj < NC; ++bj)
                 if (helper::rabs(traits::v(val, bi, bj)) >= ref) return true;
         return false;
     }
-    static bool upper         (Index   i  , Index   j  , Bloc& val, const Bloc& /*ref*/)
+    static bool upper         (Index   i  , Index   j  , Bloc& val, const Real /*ref*/)
     {
         if (NL>1 && i*NL == j*NC)
         {
@@ -521,7 +586,7 @@ public:
         }
         return i*NL <= j*NC;
     }
-    static bool lower         (Index   i  , Index   j  , Bloc& val, const Bloc& /*ref*/)
+    static bool lower         (Index   i  , Index   j  , Bloc& val, const Real /*ref*/)
     {
         if (NL>1 && i*NL == j*NC)
         {
@@ -531,13 +596,13 @@ public:
         }
         return i*NL >= j*NC;
     }
-    static bool upper_nonzeros(Index   i  , Index   j  , Bloc& val, const Bloc&   ref  ) { return upper(i,j,val,ref) && nonzeros(i,j,val,ref); }
-    static bool lower_nonzeros(Index   i  , Index   j  , Bloc& val, const Bloc&   ref  ) { return lower(i,j,val,ref) && nonzeros(i,j,val,ref); }
-    static bool upper_nonsmall(Index   i  , Index   j  , Bloc& val, const Bloc&   ref  ) { return upper(i,j,val,ref) && nonsmall(i,j,val,ref); }
-    static bool lower_nonsmall(Index   i  , Index   j  , Bloc& val, const Bloc&   ref  ) { return lower(i,j,val,ref) && nonsmall(i,j,val,ref); }
+    static bool upper_nonzeros(Index   i  , Index   j  , Bloc& val, const Real   ref  ) { return upper(i,j,val,ref) && nonzeros(i,j,val,ref); }
+    static bool lower_nonzeros(Index   i  , Index   j  , Bloc& val, const Real   ref  ) { return lower(i,j,val,ref) && nonzeros(i,j,val,ref); }
+    static bool upper_nonsmall(Index   i  , Index   j  , Bloc& val, const Real   ref  ) { return upper(i,j,val,ref) && nonsmall(i,j,val,ref); }
+    static bool lower_nonsmall(Index   i  , Index   j  , Bloc& val, const Real   ref  ) { return lower(i,j,val,ref) && nonsmall(i,j,val,ref); }
 
     template<class TMatrix>
-    void filterValues(TMatrix& M, filter_fn* filter = &nonzeros, const Bloc& ref = Bloc())
+    void filterValues(TMatrix& M, filter_fn* filter = &nonzeros, const Real ref = Real(), bool keepEmptyRows=false)
     {
         M.compress();
         nRow = M.rowSize();
@@ -573,7 +638,7 @@ public:
                     ++vid;
                 }
             }
-            if (rowBegin.back() == vid) // row was empty
+            if (!keepEmptyRows && rowBegin.back() == vid) // row was empty
             {
                 rowIndex.pop_back();
                 rowBegin.pop_back();
@@ -583,53 +648,60 @@ public:
     }
 
     template <class TMatrix>
-    void copyNonZeros(TMatrix& M)
+    void copyNonZeros(TMatrix& M, bool keepEmptyRows=false)
     {
-        filterValues(M, nonzeros, Bloc());
+        filterValues(M, nonzeros, Real(), keepEmptyRows);
     }
 
     template <class TMatrix>
-    void copyNonSmall(TMatrix& M, const Bloc& ref)
+    void copyNonSmall(TMatrix& M, const Real ref, bool keepEmptyRows=false)
     {
-        filterValues(M, nonsmall, ref);
+        filterValues(M, nonsmall, ref, keepEmptyRows);
     }
 
-    void copyUpper(Matrix& M)
+    void copyUpper(Matrix& M, bool keepEmptyRows=false)
     {
-        filterValues(M, upper);
+        filterValues(M, upper, Real(), keepEmptyRows);
     }
 
-    void copyLower(Matrix& M)
+    void copyLower(Matrix& M, bool keepEmptyRows=false)
     {
-        filterValues(M, lower);
-    }
-
-    template <class TMatrix>
-    void copyUpperNonZeros(TMatrix& M)
-    {
-        filterValues(M, upper_nonzeros);
+        filterValues(M, lower, Real(), keepEmptyRows);
     }
 
     template <class TMatrix>
-    void copyLowerNonZeros(TMatrix& M)
+    void copyUpperNonZeros(TMatrix& M, bool keepEmptyRows=false)
     {
-        filterValues(M, lower_nonzeros);
+        filterValues(M, upper_nonzeros, Real(), keepEmptyRows);
     }
 
-    void copyUpperNonSmall(Matrix& M, const Bloc& ref)
+    template <class TMatrix>
+    void copyLowerNonZeros(TMatrix& M, bool keepEmptyRows=false)
     {
-        filterValues(M, upper_nonsmall, ref);
+        filterValues(M, lower_nonzeros, Real(), keepEmptyRows);
     }
 
-    void copyLowerNonSmall(Matrix& M, const Bloc& ref)
+    void copyUpperNonSmall(Matrix& M, const Real ref, bool keepEmptyRows=false)
     {
-        filterValues(M, lower_nonsmall, ref);
+        filterValues(M, upper_nonsmall, ref, keepEmptyRows);
+    }
+
+    void copyLowerNonSmall(Matrix& M, const Real ref, bool keepEmptyRows=false)
+    {
+        filterValues(M, lower_nonsmall, ref, keepEmptyRows);
     }
 
     const Bloc& bloc(Index i, Index j) const
     {
         static Bloc empty;
-        Index rowId = i * (Index)rowIndex.size() / nBlocRow;
+#ifdef SPARSEMATRIX_CHECK
+        if (i >= rowBSize() || j >= colBSize())
+        {
+            std::cerr << "ERROR: invalid read access to bloc ("<<i<<","<<j<<") in "<< this->Name() <<" of bloc size ("<<rowBSize()<<","<<colBSize()<<")"<<std::endl;
+            return empty;
+        }
+#endif
+        Index rowId = i * rowIndex.size() / nBlocRow;
         if (sortedFind(rowIndex, i, rowId))
         {
             Range rowRange(rowBegin[rowId], rowBegin[rowId+1]);
@@ -644,7 +716,14 @@ public:
 
     Bloc* wbloc(Index i, Index j, bool create = false)
     {
-        Index rowId = i * (Index)rowIndex.size() / nBlocRow;
+#ifdef SPARSEMATRIX_CHECK
+        if (i >= rowBSize() || j >= colBSize())
+        {
+            std::cerr << "ERROR: invalid write access to bloc ("<<i<<","<<j<<") in "<< this->Name() <<" of bloc size ("<<rowBSize()<<","<<colBSize()<<")"<<std::endl;
+            return NULL;
+        }
+#endif
+        Index rowId = i * rowIndex.size() / nBlocRow;
         if (sortedFind(rowIndex, i, rowId))
         {
             Range rowRange(rowBegin[rowId], rowBegin[rowId+1]);
@@ -652,7 +731,7 @@ public:
             if (sortedFind(colsIndex, rowRange, j, colId))
             {
 #ifdef SPARSEMATRIX_VERBOSE
-                std::cout << /* this->Name()  <<  */"("<<rowBSize()<<"*"<<NL<<","<<colBSize()<<"*"<<NC<<"): bloc("<<i<<","<<j<<") found at "<<colId<<" (line "<<rowId<<")."<<std::endl;
+                std::cout << this->Name()  << "("<<rowBSize()<<"*"<<NL<<","<<colBSize()<<"*"<<NC<<"): bloc("<<i<<","<<j<<") found at "<<colId<<" (line "<<rowId<<")."<<std::endl;
 #endif
                 return &colsValue[colId];
             }
@@ -662,7 +741,7 @@ public:
             if (btemp.empty() || btemp.back().l != i || btemp.back().c != j)
             {
 #ifdef SPARSEMATRIX_VERBOSE
-                std::cout << /* this->Name()  <<  */"("<<rowSize()<<","<<colSize()<<"): new temp bloc ("<<i<<","<<j<<")"<<std::endl;
+                std::cout << this->Name()  << "("<<rowSize()<<","<<colSize()<<"): new temp bloc ("<<i<<","<<j<<")"<<std::endl;
 #endif
                 btemp.push_back(IndexedBloc(i,j));
                 traits::clear(btemp.back().value);
@@ -688,7 +767,7 @@ public:
     {
 #ifdef SPARSEMATRIX_VERBOSE
         if (nbRow != rowSize() || nbCol != colSize())
-            std::cout << /* this->Name()  <<  */": resize("<<nbRow<<","<<nbCol<<")"<<std::endl;
+            std::cout << this->Name()  << ": resize("<<nbRow<<","<<nbCol<<")"<<std::endl;
 #endif
         resizeBloc((nbRow + NL-1) / NL, (nbCol + NC-1) / NC);
         nRow = nbRow;
@@ -700,7 +779,7 @@ public:
 #ifdef SPARSEMATRIX_CHECK
         if (i >= rowSize() || j >= colSize())
         {
-            std::cerr << "ERROR: invalid read access to element ("<<i<<","<<j<<") in "<</* this->Name() <<*/" of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
+            std::cerr << "ERROR: invalid read access to element ("<<i<<","<<j<<") in "<< this->Name() << " of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
             return 0.0;
         }
 #endif
@@ -712,18 +791,18 @@ public:
     void set(Index i, Index j, double v)
     {
 #ifdef SPARSEMATRIX_VERBOSE
-        std::cout << /* this->Name()  <<  */"("<<rowSize()<<","<<colSize()<<"): element("<<i<<","<<j<<") = "<<v<<std::endl;
+        std::cout << this->Name()  << "("<<rowSize()<<","<<colSize()<<"): element("<<i<<","<<j<<") = "<<v<<std::endl;
 #endif
 #ifdef SPARSEMATRIX_CHECK
         if (i >= rowSize() || j >= colSize())
         {
-            std::cerr << "ERROR: invalid write access to element ("<<i<<","<<j<<") in "<</* this->Name() <<*/" of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
+            std::cerr << "ERROR: invalid write access to element ("<<i<<","<<j<<") in "<< this->Name() << " of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
             return;
         }
 #endif
         Index bi=0, bj=0; split_row_index(i, bi); split_col_index(j, bj);
 #ifdef SPARSEMATRIX_VERBOSE
-        std::cout << /* this->Name()  <<  */"("<<rowBSize()<<"*"<<NL<<","<<colBSize()<<"*"<<NC<<"): bloc("<<i<<","<<j<<")["<<bi<<","<<bj<<"] = "<<v<<std::endl;
+        std::cout << this->Name()  << "("<<rowBSize()<<"*"<<NL<<","<<colBSize()<<"*"<<NC<<"): bloc("<<i<<","<<j<<")["<<bi<<","<<bj<<"] = "<<v<<std::endl;
 #endif
         traits::v(*wbloc(i,j,true), bi, bj) = (Real)v;
     }
@@ -731,18 +810,18 @@ public:
     void add(Index i, Index j, double v)
     {
 #ifdef SPARSEMATRIX_VERBOSE
-        std::cout << /* this->Name()  <<  */"("<<rowSize()<<","<<colSize()<<"): element("<<i<<","<<j<<") += "<<v<<std::endl;
+        std::cout << this->Name()  << "("<<rowSize()<<","<<colSize()<<"): element("<<i<<","<<j<<") += "<<v<<std::endl;
 #endif
 #ifdef SPARSEMATRIX_CHECK
         if (i >= rowSize() || j >= colSize())
         {
-            std::cerr << "ERROR: invalid write access to element ("<<i<<","<<j<<") in "<</* this->Name() <<*/" of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
+            std::cerr << "ERROR: invalid write access to element ("<<i<<","<<j<<") in "<< this->Name() << " of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
             return;
         }
 #endif
         Index bi=0, bj=0; split_row_index(i, bi); split_col_index(j, bj);
 #ifdef SPARSEMATRIX_VERBOSE
-        std::cout << /* this->Name()  <<  */"("<<rowBSize()<<"*"<<NL<<","<<colBSize()<<"*"<<NC<<"): bloc("<<i<<","<<j<<")["<<bi<<","<<bj<<"] += "<<v<<std::endl;
+        std::cout << this->Name()  << "("<<rowBSize()<<"*"<<NL<<","<<colBSize()<<"*"<<NC<<"): bloc("<<i<<","<<j<<")["<<bi<<","<<bj<<"] += "<<v<<std::endl;
 #endif
         traits::v(*wbloc(i,j,true), bi, bj) += (Real)v;
     }
@@ -750,12 +829,12 @@ public:
     void clear(Index i, Index j)
     {
 #ifdef SPARSEMATRIX_VERBOSE
-        std::cout << /* this->Name()  <<  */"("<<rowSize()<<","<<colSize()<<"): element("<<i<<","<<j<<") = 0"<<std::endl;
+        std::cout << this->Name()  << "("<<rowSize()<<","<<colSize()<<"): element("<<i<<","<<j<<") = 0"<<std::endl;
 #endif
 #ifdef SPARSEMATRIX_CHECK
         if (i >= rowSize() || j >= colSize())
         {
-            std::cerr << "ERROR: invalid write access to element ("<<i<<","<<j<<") in "<</* this->Name() <<*/" of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
+            std::cerr << "ERROR: invalid write access to element ("<<i<<","<<j<<") in "<< this->Name() << " of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
             return;
         }
 #endif
@@ -769,12 +848,12 @@ public:
     void clearRow(Index i)
     {
 #ifdef SPARSEMATRIX_VERBOSE
-        std::cout << /* this->Name()  <<  */"("<<rowSize()<<","<<colSize()<<"): row("<<i<<") = 0"<<std::endl;
+        std::cout << this->Name()  << "("<<rowSize()<<","<<colSize()<<"): row("<<i<<") = 0"<<std::endl;
 #endif
 #ifdef SPARSEMATRIX_CHECK
         if (i >= rowSize())
         {
-            std::cerr << "ERROR: invalid write access to row "<<i<<" in "<</* this->Name() <<*/" of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
+            std::cerr << "ERROR: invalid write access to row "<<i<<" in "<< this->Name() << " of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
             return;
         }
 #endif
@@ -807,12 +886,12 @@ public:
     void clearCol(Index j)
     {
 #ifdef SPARSEMATRIX_VERBOSE
-        std::cout << /* this->Name()  <<  */"("<<rowSize()<<","<<colSize()<<"): col("<<j<<") = 0"<<std::endl;
+        std::cout << this->Name()  << "("<<rowSize()<<","<<colSize()<<"): col("<<j<<") = 0"<<std::endl;
 #endif
 #ifdef SPARSEMATRIX_CHECK
         if (j >= colSize())
         {
-            std::cerr << "ERROR: invalid write access to column "<<j<<" in "<</* this->Name() <<*/" of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
+            std::cerr << "ERROR: invalid write access to column "<<j<<" in "<< this->Name() << " of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
             return;
         }
 #endif
@@ -832,12 +911,12 @@ public:
     void clearRowCol(Index i)
     {
 #ifdef SPARSEMATRIX_VERBOSE
-        std::cout << /* this->Name()  <<  */"("<<rowSize()<<","<<colSize()<<"): row("<<i<<") = 0 and col("<<i<<") = 0"<<std::endl;
+        std::cout << this->Name()  << "("<<rowSize()<<","<<colSize()<<"): row("<<i<<") = 0 and col("<<i<<") = 0"<<std::endl;
 #endif
 #ifdef SPARSEMATRIX_CHECK
         if (i >= rowSize() || i >= colSize())
         {
-            std::cerr << "ERROR: invalid write access to row and column "<<i<<" in "<</* this->Name() <<*/" of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
+            std::cerr << "ERROR: invalid write access to row and column "<<i<<" in "<< this->Name() << " of size ("<<rowSize()<<","<<colSize()<<")"<<std::endl;
             return;
         }
 #endif
@@ -848,7 +927,7 @@ public:
         }
         else
         {
-            //std::cout << /* this->Name()  <<  */"("<<rowSize()<<","<<colSize()<<"): sparse row("<<i<<") = 0 and col("<<i<<") = 0"<<std::endl;
+            //std::cout << this->Name()  << "("<<rowSize()<<","<<colSize()<<"): sparse row("<<i<<") = 0 and col("<<i<<") = 0"<<std::endl;
             // Here we assume the matrix is symmetric
             Index bi=0; split_row_index(i, bi);
             compress();
@@ -1058,7 +1137,7 @@ public:
             if (sortedFind(colsIndex, rowRange, j, colId))
             {
 #ifdef SPARSEMATRIX_VERBOSE
-                std::cout << /* this->Name()  <<  */"("<<rowBSize()<<"*"<<NL<<","<<colBSize()<<"*"<<NC<<"): bloc("<<i<<","<<j<<") found at "<<colId<<" (line "<<rowId<<")."<<std::endl;
+                std::cout << this->Name()  << "("<<rowBSize()<<"*"<<NL<<","<<colBSize()<<"*"<<NC<<"): bloc("<<i<<","<<j<<") found at "<<colId<<" (line "<<rowId<<")."<<std::endl;
 #endif
                 return createBlockAccessor(i, j, colId);
             }
@@ -1068,7 +1147,7 @@ public:
             if (btemp.empty() || btemp.back().l != i || btemp.back().c != j)
             {
 #ifdef SPARSEMATRIX_VERBOSE
-                std::cout << /* this->Name()  <<  */"("<<rowSize()<<","<<colSize()<<"): new temp bloc ("<<i<<","<<j<<")"<<std::endl;
+                std::cout << this->Name()  << "("<<rowSize()<<","<<colSize()<<"): new temp bloc ("<<i<<","<<j<<")"<<std::endl;
 #endif
                 btemp.push_back(IndexedBloc(i,j));
                 traits::clear(btemp.back().value);
