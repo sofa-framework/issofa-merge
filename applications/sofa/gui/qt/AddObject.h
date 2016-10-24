@@ -48,7 +48,7 @@ public:
     AddObject( std::vector<std::string> *list_object_, QWidget* parent, bool  modal= false, Qt::WindowFlags f= 0 );
 
 
-    void setPath(const std::string path);
+    void setPath(const std::string& path);
 
 public slots:
     void fileOpen();

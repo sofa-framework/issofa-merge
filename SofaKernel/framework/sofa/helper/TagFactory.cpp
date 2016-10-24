@@ -48,7 +48,7 @@ TagFactory::TagFactory()
     while(it != tagfac->tagsList.end() && (*it)!= name)
     {
         ++it;
-        i++;
+        ++i;
     }
 
     if (it!=tagfac->tagsList.end())

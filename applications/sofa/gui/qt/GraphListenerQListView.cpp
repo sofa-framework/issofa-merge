@@ -612,9 +612,6 @@ core::objectmodel::BaseData* GraphListenerQListView::findData(const QTreeWidgetI
 /*****************************************************************************************************************/
 void GraphListenerQListView::removeDatas(core::objectmodel::BaseObject* parent)
 {
-
-    BaseData* data = NULL;
-    std::string name;
     if (frozen) return;
 
     if( items.count(parent) )
@@ -624,7 +621,7 @@ void GraphListenerQListView::removeDatas(core::objectmodel::BaseObject* parent)
                 it != fields.end();
                 ++it)
         {
-            data = (*it);
+            BaseData* data = (*it);
             if(datas.count(data))
             {
                 delete datas[data];
@@ -638,9 +635,7 @@ void GraphListenerQListView::removeDatas(core::objectmodel::BaseObject* parent)
 void GraphListenerQListView::addDatas(sofa::core::objectmodel::BaseObject *parent)
 {
     if (frozen) return;
-    QTreeWidgetItem* new_item;
     std::string name;
-    BaseData* data = NULL;
     if(items.count(parent))
     {
         const sofa::core::objectmodel::Base::VecData& fields = parent->getDataFields();
@@ -648,11 +643,11 @@ void GraphListenerQListView::addDatas(sofa::core::objectmodel::BaseObject *paren
                 it!=fields.end();
                 ++it)
         {
-            data = (*it);
+            BaseData* data = (*it);
             if(!datas.count(data))
             {
                 static QPixmap pixData((const char**)icondata_xpm);
-                new_item = createItem(items[parent]);
+                QTreeWidgetItem* new_item = createItem(items[parent]);
                 name += "  ";
                 name += data->getName();
                 datas.insert(std::pair<BaseData*,QTreeWidgetItem*>(data,new_item));

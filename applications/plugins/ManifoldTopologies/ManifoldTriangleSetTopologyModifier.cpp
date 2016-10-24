@@ -407,13 +407,13 @@ bool ManifoldTriangleSetTopologyModifier::addTrianglesPreconditions( const sofa:
     }
 
 
-    while ( trianglesList.size() != 0 && allDone == true)
+    while ( !trianglesList.empty() && allDone == true)
     {
         //initialisation
         allDone = false;
 
         // horrible loop
-        for ( it = trianglesList.begin(); it != trianglesList.end(); it++)
+        for ( it = trianglesList.begin(); it != trianglesList.end(); ++it)
         {
             //	    std::cout << "it triangle: " << (*it).first << std::endl;
 
@@ -509,7 +509,7 @@ bool ManifoldTriangleSetTopologyModifier::addTrianglesPreconditions( const sofa:
 
 
 
-    if (trianglesList.size() != 0 )
+    if (!trianglesList.empty())
     {
         //	  std::cout << " passe false" << std::endl;
 

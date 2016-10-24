@@ -45,7 +45,7 @@ public:
     long double __value_;
 public:
     __node()
-        : __name_(0), __size_(0), __left_(0), __right_(0), __cached_size_(-1)
+        : __name_(0), __size_(0), __left_(0), __right_(0), __cached_size_(-1), __value_(0)
         {}
     virtual ~__node() {};
 
@@ -136,10 +136,10 @@ void display(__node* x, int indent = 0)
         size_t sz = x->size();
         char* buf = (char*)calloc(sz+10, 1);
         x->get_demangled_name(buf);
-        printf("%s [%ld] %s, %p\n", typeid(*x).name(), sz, buf, x);
+        printf("%s [%lu] %s, %p\n", typeid(*x).name(), sz, buf, x);
         if (strlen(buf) != sz)
         {
-            printf("strlen(buf) = %ld and size = %ld\n", strlen(buf), sz);
+            printf("strlen(buf) = %ld and size = %lu\n", strlen(buf), sz);
         }
         free(buf);
         display(x->__left_, indent+1);

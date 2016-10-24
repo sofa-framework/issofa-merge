@@ -68,11 +68,21 @@ struct DeviceData
     Quat quat;
     bool ready;
     bool stop;
+
+    DeviceData()
+    : id(0)
+    , nupdates(0)
+    , m_buttonState(0)
+    , m_devicePosition(0,0,0)
+    , pos(0,0,0)
+    , ready(false)
+    , stop(false)
+    {}
 };
 
 struct OmniData
 {
-    vector<ForceFeedback*> forceFeedbacks;
+    helper::vector<ForceFeedback*> forceFeedbacks;
     int forceFeedbackIndice;
     simulation::Node *context;
 
@@ -124,7 +134,7 @@ public:
     virtual void draw();
 	virtual void draw(const core::visual::VisualParams*) override;
 
-    void setForceFeedbacks(vector<ForceFeedback*> ffs);
+    void setForceFeedbacks(helper::vector<ForceFeedback*> ffs);
 
     void onKeyPressedEvent(core::objectmodel::KeypressedEvent *);
     void onKeyReleasedEvent(core::objectmodel::KeyreleasedEvent *);

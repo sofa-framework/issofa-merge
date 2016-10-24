@@ -412,6 +412,7 @@ public:
         , maxVDist( initData(&maxVDist,   1.0, "maxVDist", "maximum distance to use for velocity estimation") )
         , newPointsNode(NULL), newPointsCM(NULL), intersection(NULL), detection(NULL)
         , facetsLastIt(-20), pointsLastIt(-20), matrixLastIt(-20), motionLastTime(-1000)
+        , newPoints(NULL), 
     {
         matrix.identity();
     }
@@ -1277,6 +1278,8 @@ public:
         , meshModified(true)
 //    , lastMeshRev(-1)
         , lastPosRev(-1)
+        , normModified(false)
+        , lastNormRev(0)
     {
     }
 

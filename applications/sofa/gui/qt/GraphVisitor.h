@@ -54,7 +54,10 @@ namespace qt
 class GraphVisitor
 {
 public:
-    GraphVisitor(WindowVisitor *w) { window=w; graph=w->graphView; totalTimeMax=-1; initSize=false;}
+    GraphVisitor(WindowVisitor *w)
+    : totalTime(0)
+    , level(0)
+    { window=w; graph=w->graphView; totalTimeMax=-1; initSize=false;}
     QTreeWidgetItem *addNode(QTreeWidgetItem *parent,QTreeWidgetItem *elementAbove, std::string info);
     QTreeWidgetItem *addComment(QTreeWidgetItem *element, QTreeWidgetItem *elementAbove, std::string comment);
     void addInformation(QTreeWidgetItem *element, std::string name, std::string info);

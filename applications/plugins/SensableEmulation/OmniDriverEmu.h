@@ -60,7 +60,7 @@ class ForceFeedback;
 using namespace sofa::defaulttype;
 
 /** Holds data retrieved from HDAPI. */
-typedef struct
+struct DeviceData
 {
     // changement unsigned int -> HDD
     //HHD id;
@@ -72,9 +72,19 @@ typedef struct
     Quat quat;
     bool ready;
     bool stop;
-} DeviceData;
 
-typedef struct
+    DeviceData()
+    : nupdates(0)
+    , m_buttonState(0)
+    , pos(0,0,0)
+    , quat(0,0,0,1)
+    , ready(false)
+    , stop(false)
+	{}
+    
+};
+
+struct OmniData
 {
     helper::vector<ForceFeedback*> forceFeedbacks;
     //ForceFeedback* forceFeedback;
@@ -93,7 +103,14 @@ typedef struct
     DeviceData servoDeviceData;  // for the haptic loop
     DeviceData deviceData;		 // for the simulation loop
 
-} OmniData;
+    OmniData()
+    : forceFeedbackIndice(0)
+    , context(NULL)
+    , forceScale(1.0)
+    , scale(1.0)
+    , permanent_feedback(false)
+    {}
+};
 
 /**
 * Omni driver

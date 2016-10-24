@@ -128,7 +128,7 @@ void AddObject::accept()
 
 //**************************************************************************************
 //Set the default file
-void AddObject::setPath(const std::string path)
+void AddObject::setPath(const std::string& path)
 {
     fileName = path;
     openFilePath->setText(QString(fileName.c_str()));

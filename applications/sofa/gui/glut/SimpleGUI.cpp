@@ -1010,9 +1010,9 @@ void SimpleGUI::calcProjection()
     int height = _H;
     double xNear, yNear/*, xOrtho, yOrtho*/;
     double xFactor = 1.0, yFactor = 1.0;
-    double offset;
-    double xForeground, yForeground, zForeground, xBackground, yBackground,
-           zBackground;
+    //double offset;
+    //double xForeground, yForeground, xBackground, yBackground;
+    //double zForeground, zBackground;
     Vector3 center;
 
     /// Camera part
@@ -1032,7 +1032,7 @@ void SimpleGUI::calcProjection()
 
     xNear = 0.35 * vparams->zNear();
     yNear = 0.35 * vparams->zNear();
-    offset = 0.001 * vparams->zNear(); // for foreground and background planes
+    //offset = 0.001 * vparams->zNear(); // for foreground and background planes
 
     /*xOrtho = fabs(vparams->sceneTransform().translation[2]) * xNear
             / vparams->zNear();
@@ -1063,8 +1063,8 @@ void SimpleGUI::calcProjection()
 
     //std::cout << xNear << " " << yNear << std::endl;
 
-    zForeground = -vparams->zNear() - offset;
-    zBackground = -vparams->zFar() + offset;
+    //zForeground = -vparams->zNear() - offset;
+    //zBackground = -vparams->zFar() + offset;
 
     if (currentCamera->getCameraType() == core::visual::VisualParams::PERSPECTIVE_TYPE)
         gluPerspective(currentCamera->getFieldOfView(), (double) width / (double) height, vparams->zNear(), vparams->zFar());
@@ -1081,15 +1081,15 @@ void SimpleGUI::calcProjection()
                 vparams->zNear(), vparams->zFar());
     }
 
-    xForeground = -zForeground * xNear / vparams->zNear();
-    yForeground = -zForeground * yNear / vparams->zNear();
-    xBackground = -zBackground * xNear / vparams->zNear();
-    yBackground = -zBackground * yNear / vparams->zNear();
+    //xForeground = -zForeground * xNear / vparams->zNear();
+    //yForeground = -zForeground * yNear / vparams->zNear();
+    //xBackground = -zBackground * xNear / vparams->zNear();
+    //yBackground = -zBackground * yNear / vparams->zNear();
 
-    xForeground *= xFactor;
-    yForeground *= yFactor;
-    xBackground *= xFactor;
-    yBackground *= yFactor;
+    //xForeground *= xFactor;
+    //yForeground *= yFactor;
+    //xBackground *= xFactor;
+    //yBackground *= yFactor;
 
     glGetDoublev(GL_PROJECTION_MATRIX,lastProjectionMatrix);
 
@@ -1305,7 +1305,6 @@ void SimpleGUI::keyPressEvent ( int k )
         case 'q': //GLUT_KEY_Escape:
         {
             exit(0);
-            break;
         }
 
         case GLUT_KEY_F5:

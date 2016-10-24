@@ -148,6 +148,32 @@ void Base::addData(BaseData* f, const std::string& name)
     f->setOwner(this);
 }
 
+/// Remove a data field.
+void Base::removeData(BaseData* f)
+{
+    if (f->getOwner() == this)
+    {
+        f->setOwner(NULL);
+    }
+    VecData::iterator itv = std::find(m_vecData.begin(), m_vecData.end(), f);
+    MapData::iterator itm = m_aliasData.find(f->getName());
+    if (itv == m_vecData.end() && itm == m_aliasData.end())
+    {
+        serr << "Data field " << f->getName()
+                << " cannot be removed as it is not registered !"
+                << sendl;
+        return;
+    }
+    if (itv != m_vecData.end())
+    {
+        m_vecData.erase(itv);
+    }
+    if (itm != m_aliasData.end())
+    {
+        m_aliasData.erase(itm);
+    }
+}
+
 /// Add an alias to a Data
 void Base::addAlias( BaseData* field, const char* alias)
 {

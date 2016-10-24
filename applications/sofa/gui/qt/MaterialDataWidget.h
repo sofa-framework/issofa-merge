@@ -81,6 +81,17 @@ public:
             const char* name,
             core::objectmodel::Data<sofa::core::loader::Material>* data):
         TDataWidget<sofa::core::loader::Material>(parent,name,data)
+        , _nameEdit(NULL)
+        , _ambientPicker(NULL)
+        , _emissivePicker(NULL)
+        , _specularPicker(NULL)
+        , _diffusePicker(NULL)
+        , _shininessEdit(NULL)
+        , _ambientCheckBox(NULL)
+        , _emissiveCheckBox(NULL)
+        , _specularCheckBox(NULL)
+        , _diffuseCheckBox(NULL)
+        , _shininessCheckBox(NULL)
     {}
 
     virtual bool createWidgets();
@@ -115,7 +126,8 @@ public:
         TDataWidget< helper::vector<sofa::core::loader::Material> >(parent,name,data),
         _materialDataWidget(NULL),
         _currentMaterial(0,data->isDisplayed(),data->isReadOnly()),
-        _comboBox(NULL)
+        _comboBox(NULL),
+        _currentMaterialPos(0)
     {
 
     };

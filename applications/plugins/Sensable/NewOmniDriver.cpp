@@ -89,8 +89,8 @@ const char* NewOmniDriver::visualNodeFiles[NVISUALNODE] =
 using namespace sofa::defaulttype;
 
 static HHD hHD = HD_INVALID_HANDLE ;
-vector< HHD > hHDVector;
-vector<NewOmniDriver*> autreOmniDriver;
+helper::vector< HHD > hHDVector;
+helper::vector<NewOmniDriver*> autreOmniDriver;
 static HDSchedulerHandle hStateHandle = HD_INVALID_HANDLE;
 bool initDeviceBool;
 bool frameAvant = false;
@@ -544,8 +544,10 @@ void NewOmniDriver::init()
     parent = dynamic_cast<simulation::Node*>(this->getContext());
 
     sofa::simulation::tree::GNode *parentRoot = dynamic_cast<sofa::simulation::tree::GNode*>(this->getContext());
-    if (parentRoot->parent())
-        parentRoot = parentRoot->parent();
+//    if (parentRoot->parent())
+//        parentRoot = parentRoot->parent();
+    if (parentRoot->getParents()[0])
+     parentRoot = dynamic_cast<sofa::simulation::tree::GNode*>(parentRoot->getParents()[0]);
 
     nodePrincipal= parentRoot->createChild("omniVisu "+deviceName.getValue());
     nodePrincipal->updateContext();
