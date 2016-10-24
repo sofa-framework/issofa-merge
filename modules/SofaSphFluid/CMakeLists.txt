@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.12)
 project(SofaSphFluid)
 
 set(HEADER_FILES
+    SPHKernel.h
     ParticleSink.h
     ParticleSource.h
     ParticlesRepulsionForceField.h
