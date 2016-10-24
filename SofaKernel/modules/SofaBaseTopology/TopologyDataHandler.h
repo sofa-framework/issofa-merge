@@ -57,7 +57,7 @@ inline void TopologyDataHandler_resize(container_type& data, unsigned int n) { d
 /** \brief A class for storing Edge related data. Automatically manages topology changes.
 *
 * This class is a wrapper of class helper::vector that is made to take care transparently of all topology changes that might
-* happen (non exhaustive list: Edges added, removed, fused, renumbered).
+* happen (non exhaustive list: elements added, removed, fused, renumbered).
 */
 
 template< class TopologyElementType, class VecT>
@@ -170,7 +170,7 @@ protected:
             const sofa::helper::vector< sofa::helper::vector< double > >& coefs,
             const sofa::helper::vector< AncestorElem >& ancestorElems);
 
-    /// Remove the values corresponding to the Edges removed.
+    /// Remove the values corresponding to the elements removed.
     virtual void remove( const sofa::helper::vector<unsigned int> &index );
 
     /// Reorder the values.

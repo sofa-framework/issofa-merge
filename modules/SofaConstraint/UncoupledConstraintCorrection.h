@@ -129,7 +129,7 @@ public:
     Data<bool> f_verbose;
 
     Data < bool > d_handleTopologyChange;
-      
+
     Data< Real > d_correctionVelocityFactor;
     Data< Real > d_correctionPositionFactor;
 

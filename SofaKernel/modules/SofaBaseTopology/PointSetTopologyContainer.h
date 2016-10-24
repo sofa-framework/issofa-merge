@@ -62,8 +62,6 @@ public:
 
     virtual void init();
 
-
-
     /// Procedural creation methods
     /// @{
     virtual void clear();
@@ -102,6 +100,9 @@ public:
     /** \brief Returns the Z coordinate of the ith DOF. */
     virtual SReal getPZ(int i) const;
 
+   	/** \brief Returns the type of the topology */
+   	virtual sofa::core::topology::TopologyObjectType getTopologyType() const {return sofa::core::topology::POINT;}
+    
     /// @}
 
 
@@ -151,8 +152,7 @@ public:
         return in;
     }
 
-
-
+    const sofa::helper::vector<PointID>& getPoints() const;
 
 protected:
     /// \brief Function creating the data graph linked to d_point
@@ -176,10 +176,11 @@ protected:
 
 public:
 
-    Data<unsigned int> nbPoints;
-
     Data<InitTypes::VecCoord> d_initPoints;
+
 protected:
+
+
     /// Boolean used to know if the topology Data of this container is dirty
     bool m_pointTopologyDirty;
 
@@ -189,6 +190,12 @@ protected:
     /// \brief variables used to display the graph of Data/DataEngines linked to this Data array.
     sofa::helper::vector < sofa::helper::vector <std::string> > m_dataGraph;
     sofa::helper::vector < sofa::helper::vector <std::string> > m_enginesGraph;
+
+private:
+    
+    Data<unsigned int> nbPoints;
+
+    Data<sofa::helper::vector<PointID> > points;
 };
 
 } // namespace topology

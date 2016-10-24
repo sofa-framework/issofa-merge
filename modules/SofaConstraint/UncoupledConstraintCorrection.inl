@@ -185,6 +185,9 @@ void UncoupledConstraintCorrection< DataTypes >::handleTopologyChange()
     using sofa::core::topology::TopologyChangeType;
     using sofa::core::topology::BaseMeshTopology;
 
+    if (!d_handleTopologyChange.getValue())
+        return; // another component takes care of updating compliance vector
+
     BaseMeshTopology *topology = this->getContext()->getMeshTopology();
     if (!topology)
         return;
