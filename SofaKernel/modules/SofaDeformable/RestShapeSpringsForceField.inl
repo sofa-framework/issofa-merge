@@ -26,11 +26,13 @@
 #define SOFA_COMPONENT_FORCEFIELD_RESTSHAPESPRINGFORCEFIELD_INL
 
 #include "RestShapeSpringsForceField.h"
+#include <sofa/core/behavior/ForceField.inl>
+
 #include <sofa/core/visual/VisualParams.h>
-#include <sofa/helper/system/config.h>
+
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
-#include <sofa/helper/gl/template.h>
+
 #include <assert.h>
 #include <iostream>
 
@@ -247,7 +249,7 @@ void RestShapeSpringsForceField<DataTypes>::addForce(const core::MechanicalParam
 
             Deriv dx = p1[index] - p0[ext_index];
             f1[index] -=  dx * k0 ;
-        }
+      }
     }
     else
     {
@@ -296,9 +298,6 @@ void RestShapeSpringsForceField<DataTypes>::addDForce(const core::MechanicalPara
 template<class DataTypes>
 void RestShapeSpringsForceField<DataTypes>::addKToMatrix(const core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix )
 {
-    //      remove to be able to build in parallel
-    // 	const VecIndex& indices = points.getValue();
-    // 	const VecReal& k = stiffness.getValue();   
     sofa::core::behavior::MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
     sofa::defaulttype::BaseMatrix* mat = mref.matrix;
     unsigned int offset = mref.offset;
@@ -384,6 +383,7 @@ void RestShapeSpringsForceField<DataTypes>::addSubKToMatrix(const core::Mechanic
         }
     }
 }
+
 
 template<class DataTypes>
 void RestShapeSpringsForceField<DataTypes>::updateForceMask()

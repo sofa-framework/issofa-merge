@@ -74,6 +74,15 @@ public:
     Data< defaulttype::Vec4f > d_color;
     /// Concerned DOFs indices are numbered from the end of the MState DOFs vector
     Data< bool > indexFromEnd;
+    /// Enable support of topological changes for point indices (disable if another component takes care of this)
+    Data < bool > d_handleTopologyChange;
+    /// Start of time which the force is activated
+	Data< double > d_startTime;
+    /// End of time which the force is activated
+	Data< double > d_endTime;
+    /// Time at which the time-based activation loops
+	Data< double > d_loopTime;
+
 protected:
     ConstantForceField();
 public:
@@ -106,6 +115,9 @@ public:
     virtual SReal getPotentialEnergy(const core::MechanicalParams* params, const DataVecCoord& x) const;
 
     void draw(const core::visual::VisualParams* vparams);
+
+    /// Check if this force is active
+    bool isActive() const;
 
 protected:
     /// Pointer to the current topology

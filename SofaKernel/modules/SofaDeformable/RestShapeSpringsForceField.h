@@ -95,7 +95,6 @@ public:
     sofa::core::behavior::MechanicalState< DataTypes > *restMState;
     linearsolver::EigenBaseSparseMatrix<typename DataTypes::Real> matS;
 
-    //VecDeriv Springs_dir;
 protected:
     RestShapeSpringsForceField();
     Data< bool > d_useRestMState; ///< An external MechanicalState is used as rest reference.
@@ -146,7 +145,7 @@ protected :
 
 };
 
-#if defined(SOFA_EXTERN_TEMPLATE) && !defined(SOFA_COMPONENT_FORCEFIELD_RESTSHAPESPRINGSFORCEFIELD_CPP)
+#if defined(SOFA_EXTERN_TEMPLATE) && !defined(SOFA_BUILD_DEFORMABLE)
 
 #ifndef SOFA_FLOAT
 extern template class SOFA_DEFORMABLE_API RestShapeSpringsForceField<sofa::defaulttype::Vec3dTypes>;

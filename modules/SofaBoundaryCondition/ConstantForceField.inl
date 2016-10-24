@@ -54,6 +54,10 @@ ConstantForceField<DataTypes>::ConstantForceField()
     , arrowSizeCoef(initData(&arrowSizeCoef,(SReal)0.0, "arrowSizeCoef", "Size of the drawn arrows (0->no arrows, sign->direction of drawing"))
     , d_color(initData(&d_color, defaulttype::Vec4f(0.2f,0.9f,0.3f,1.0f), "showColor", "Color for object display"))
     , indexFromEnd(initData(&indexFromEnd,(bool)false,"indexFromEnd", "Concerned DOFs indices are numbered from the end of the MState DOFs vector"))
+    , d_handleTopologyChange(initData(&d_handleTopologyChange, true, "handleTopologyChange", "Enable support of topological changes for point indices (disable if another component takes care of this)"))
+    , d_startTime(initData(&d_startTime, 0.0, "startTime", "Start of time which the force is activated"))
+    , d_endTime(initData(&d_endTime, std::numeric_limits<double>::max(), "endTime", "End of time which the force is activated"))
+    , d_loopTime(initData(&d_loopTime, 0.0, "loopTime", "Time at which the time-based activation loops"))
 {
     arrowSizeCoef.setGroup("Visualization");
     d_color.setGroup("Visualization");
@@ -66,63 +70,82 @@ void ConstantForceField<DataTypes>::init()
 {
     topology = this->getContext()->getMeshTopology();
 
-    // Initialize functions and parameters for topology data and handler
-    points.createTopologicalEngine(topology);
-    points.registerTopologicalData();
+    if (d_handleTopologyChange.getValue())
+    {
+        // Initialize functions and parameters for topology data and handler
+        points.createTopologicalEngine(topology);
+        points.registerTopologicalData();
+    }
 
     Inherit::init();
 }
 
+template<class DataTypes>
+bool ConstantForceField<DataTypes>::isActive() const
+{
+    const double startTime = this->d_startTime.getValue();
+    const double endTime = this->d_endTime.getValue();
+    const double loopTime = this->d_loopTime.getValue();
+    double time = this->getContext()->getTime();
+    if (loopTime != 0)
+    {
+        time = fmod(time, loopTime);
+    }
+    return (time >= startTime && time < endTime);
+}
 
 template<class DataTypes>
 void ConstantForceField<DataTypes>::addForce(const core::MechanicalParams* /*params*/, DataVecDeriv& f1, const DataVecCoord& p1, const DataVecDeriv&)
 {
-    sofa::helper::WriteAccessor< core::objectmodel::Data< VecDeriv > > _f1 = f1;
-    _f1.resize(p1.getValue().size());
-
-    Deriv singleForce;
-    const Deriv& forceVal = force.getValue();
-    const Deriv& totalForceVal = totalForce.getValue();
-    const VecIndex& indices = points.getValue();
-    const VecDeriv& f = forces.getValue();
-    unsigned int i = 0, nbForcesIn = f.size(), nbForcesOut = _f1.size();
-
-    if (totalForceVal * totalForceVal > 0)
+    if (isActive())
     {
-        unsigned int nbForces = indices.empty() ? nbForcesOut : indices.size();
-        singleForce = totalForceVal / (Real)nbForces;
-    }
-    else if (forceVal * forceVal > 0.0)
-        singleForce = forceVal;
+        sofa::helper::WriteAccessor< core::objectmodel::Data< VecDeriv > > _f1 = f1;
+        _f1.resize(p1.getValue().size());
 
-    const Deriv f_end = (f.empty() ? singleForce : f[f.size()-1]);
+        Deriv singleForce;
+        const Deriv& forceVal = force.getValue();
+        const Deriv& totalForceVal = totalForce.getValue();
+        const VecIndex& indices = points.getValue();
+        const VecDeriv& f = forces.getValue();
+        unsigned int i = 0, nbForcesIn = f.size(), nbForcesOut = _f1.size();
 
-    // When no indices are given, copy the forces from the start
-    if (indices.empty())
-    {
-        unsigned int nbCopy = std::min(nbForcesIn, nbForcesOut);
-        for (; i < nbCopy; ++i) // Copy from the forces list
-            _f1[i] += f[i];
-        for (; i < nbForcesOut; ++i) // Copy from the single value or the last value of the forces list
-            _f1[i] += f_end;
-    }
-    else
-    {
-        unsigned int nbIndices = indices.size();
-        unsigned int nbCopy = std::min(nbForcesIn, nbIndices); // forces & points are not garanteed to be of the same size
-        if (!indexFromEnd.getValue())
+        if (totalForceVal * totalForceVal > 0)
         {
-            for (; i < nbCopy; ++i)
-                _f1[indices[i]] += f[i];
-            for (; i < nbIndices; ++i)
-                _f1[indices[i]] += f_end;
+            unsigned int nbForces = indices.empty() ? nbForcesOut : indices.size();
+            singleForce = totalForceVal / (Real)nbForces;
+        }
+        else if (forceVal * forceVal > 0.0)
+            singleForce = forceVal;
+
+        const Deriv f_end = (f.empty() ? singleForce : f[f.size()-1]);
+
+        // When no indices are given, copy the forces from the start
+        if (indices.empty())
+        {
+            unsigned int nbCopy = std::min(nbForcesIn, nbForcesOut);
+            for (; i < nbCopy; ++i) // Copy from the forces list
+                _f1[i] += f[i];
+            for (; i < nbForcesOut; ++i) // Copy from the single value or the last value of the forces list
+                _f1[i] += f_end;
         }
         else
         {
-            for (; i < nbCopy; ++i)
-                _f1[nbForcesOut - indices[i] - 1] += f[i];
-            for (; i < nbIndices; ++i)
-                _f1[nbForcesOut - indices[i] - 1] += f_end;
+            unsigned int nbIndices = indices.size();
+            unsigned int nbCopy = std::min(nbForcesIn, nbIndices); // forces & points are not garanteed to be of the same size
+            if (!indexFromEnd.getValue())
+            {
+                for (; i < nbCopy; ++i)
+                    _f1[indices[i]] += f[i];
+                for (; i < nbIndices; ++i)
+                    _f1[indices[i]] += f_end;
+            }
+            else
+            {
+                for (; i < nbCopy; ++i)
+                    _f1[nbForcesOut - indices[i] - 1] += f[i];
+                for (; i < nbIndices; ++i)
+                    _f1[nbForcesOut - indices[i] - 1] += f_end;
+            }
         }
     }
 }
@@ -135,36 +158,40 @@ void ConstantForceField<DataTypes>::addKToMatrix(sofa::defaulttype::BaseMatrix *
 template <class DataTypes>
 SReal ConstantForceField<DataTypes>::getPotentialEnergy(const core::MechanicalParams* /*params*/, const DataVecCoord& x) const
 {
-    const VecIndex& indices = points.getValue();
-    const VecDeriv& f = forces.getValue();
-    const VecCoord& _x = x.getValue();
-    const Deriv f_end = (f.empty()? force.getValue() : f[f.size()-1]);
-    SReal e = 0;
-    unsigned int i = 0;
-
-    if (!indexFromEnd.getValue())
+    double e = 0;
+    if (isActive())
     {
-        for (; i<f.size(); i++)
-        {
-            e -= f[i] * _x[indices[i]];
-        }
-        for (; i<indices.size(); i++)
-        {
-            e -= f_end * _x[indices[i]];
-        }
-    }
-    else
-    {
-        for (; i < f.size(); i++)
-        {
-            e -= f[i] * _x[_x.size() - indices[i] -1];
-        }
-        for (; i < indices.size(); i++)
-        {
-            e -= f_end * _x[_x.size() - indices[i] -1];
-        }
-    }
+        const VecIndex& indices = points.getValue();
+        const VecDeriv& f = forces.getValue();
+        const VecCoord& _x = x.getValue();
+        const Deriv f_end = (f.empty()? force.getValue() : f[f.size()-1]);
+        unsigned int i = 0;
 
+        if (!indexFromEnd.getValue())
+        {
+            for (; i<f.size(); i++)
+            {
+                e -= f[i] * _x[indices[i]];
+            }
+            for (; i<indices.size(); i++)
+            {
+                e -= f_end * _x[indices[i]];
+            }
+        }
+        else
+        {
+            for (; i < f.size(); i++)
+            {
+                e -= f[i] * _x[_x.size() - indices[i] -1];
+            }
+            for (; i < indices.size(); i++)
+            {
+                e -= f_end * _x[_x.size() - indices[i] -1];
+            }
+        }
+
+    }
+    
     return e;
 }
 
@@ -185,6 +212,8 @@ void ConstantForceField<DataTypes>::setForce(unsigned i, const Deriv& force)
 template<class DataTypes>
 void ConstantForceField<DataTypes>::draw(const core::visual::VisualParams* vparams)
 {
+    if (!isActive()) return;
+
     vparams->drawTool()->saveLastState();
 
     SReal aSC = arrowSizeCoef.getValue();
@@ -205,8 +234,6 @@ void ConstantForceField<DataTypes>::draw(const core::visual::VisualParams* vpara
     const VecDeriv& f = forces.getValue();
     const Deriv f_end = (f.empty()? singleForce : f[f.size()-1]);
     const VecCoord& x = this->mstate->read(core::ConstVecCoordId::position())->getValue();
-
-
 
     if( fabs(aSC)<1.0e-10 )
     {
@@ -229,7 +256,6 @@ void ConstantForceField<DataTypes>::draw(const core::visual::VisualParams* vpara
                     DataTypes::get(xx, xy, xz, x[x.size() - indices[i] - 1]);
                 }
             }
-
             DataTypes::get(fx,fy,fz,(i<f.size())? f[i] : f_end);
             points.push_back(defaulttype::Vector3(xx, xy, xz ));
             points.push_back(defaulttype::Vector3(xx+fx, xy+fy, xz+fz ));
@@ -258,7 +284,6 @@ void ConstantForceField<DataTypes>::draw(const core::visual::VisualParams* vpara
                     DataTypes::get(xx, xy, xz, x[x.size() - indices[i] - 1]);
                 }
             }
-
             DataTypes::get(fx,fy,fz,(i<f.size())? f[i] : f_end);
 
             defaulttype::Vector3 p1( xx, xy, xz);
