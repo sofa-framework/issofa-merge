@@ -116,6 +116,7 @@ public:
     Data<bool> f_projectForce;
     Data<bool> f_solveConstraint;
     Data<bool> d_trapezoidalScheme;
+    Data<bool> f_solveConstraint;
 protected:
     EulerImplicitSolver();
 public:
