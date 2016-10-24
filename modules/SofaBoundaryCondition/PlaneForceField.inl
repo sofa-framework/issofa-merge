@@ -36,7 +36,7 @@
 #include <iostream>
 #include <sofa/defaulttype/BoundingBox.h>
 #include <limits>
-
+#include <numeric>
 
 namespace sofa
 {
@@ -48,62 +48,96 @@ namespace forcefield
 {
 
 template<class DataTypes>
+typename DataTypes::Real computePlaneForce( typename DataTypes::DPos& force, const typename DataTypes::Coord& p, const typename DataTypes::Deriv& v, const typename DataTypes::DPos& planeN, typename DataTypes::Real planeD, 
+                        typename DataTypes::Real stiff, typename DataTypes::Real damp,  bool bilateral  )
+{
+    typename DataTypes::Real d = DataTypes::getCPos(p)*planeN-planeD;
+    const bool isViolating = bilateral || d < 0; 
+    
+    if( isViolating )
+    {
+        typename DataTypes::Real forceIntensity = -stiff*d;
+        typename DataTypes::Real dampingIntensity = -damp*d;
+        force = planeN*forceIntensity - DataTypes::getDPos(v)*dampingIntensity; 
+    }
+
+    return d;   
+}
+
+template<class DataTypes>
 void PlaneForceField<DataTypes>::setPlane(const Deriv& normal, Real d)
 {
 	DPos tmpN = DataTypes::getDPos(normal);
 	Real n = tmpN.norm();
 	planeNormal.setValue( tmpN / n);
-	planeD.setValue( d / n );
+	planeD.setValue( VecReal(1, d / n) );
 }
 
 template<class DataTypes>
 void PlaneForceField<DataTypes>::addForce(const core::MechanicalParams* /* mparams */, DataVecDeriv& f, const DataVecCoord& x, const DataVecDeriv& v)
 {
-    sofa::helper::WriteAccessor< core::objectmodel::Data< VecDeriv > > f1 = f;
-    sofa::helper::ReadAccessor< core::objectmodel::Data< VecCoord > > p1 = x;
-    sofa::helper::ReadAccessor< core::objectmodel::Data< VecDeriv > > v1 = v;
+    sofa::helper::WriteAccessor< sofa::Data< VecDeriv > > f1 = f;
+    sofa::helper::ReadAccessor<  sofa::Data< VecCoord > > p1 = x;
+    sofa::helper::ReadAccessor<  sofa::Data< VecDeriv > > v1 = v;
+    sofa::helper::WriteAccessor< sofa::Data< sofa::helper::vector<PlaneContact> > > contacts = this->contacts;
 
     //this->dfdd.resize(p1.size());
-    this->contacts.clear();
+    contacts.clear();
     f1.resize(p1.size());
-
-    unsigned int ibegin = 0;
-    unsigned int iend = p1.size();
-
-    if (localRange.getValue()[0] >= 0)
-        ibegin = localRange.getValue()[0];
-
-    if (localRange.getValue()[1] >= 0 && (unsigned int)localRange.getValue()[1]+1 < iend)
-        iend = localRange.getValue()[1]+1;
 
 	Real limit = this->maxForce.getValue();
 	limit *= limit; // squared
 
-	Real stiff = this->stiffness.getValue();
-	Real damp = this->damping.getValue();
-	DPos planeN = planeNormal.getValue();
+	const Real stiff = this->stiffness.getValue();
+	const Real  damp = this->damping.getValue();
+	const VecReal& planeD = this->planeD.getValue();
+    const DPos& planeN = planeNormal.getValue();
+    const bool  bilateral = this->bilateral.getValue();
 
-    for (unsigned int i=ibegin; i<iend; i++)
+    sofa::helper::ReadAccessor< sofa::Data< sofa::helper::vector<unsigned > > > indices = this->indices;
+
+    if(indices.empty() )
     {
-        Real d = DataTypes::getCPos(p1[i])*planeN-planeD.getValue();
-        if (bilateral.getValue() || d<0 )
+        for(std::size_t i=0;i<p1.size();++i)
         {
-            //serr<<"PlaneForceField<DataTypes>::addForce, d = "<<d<<sendl;
-            Real forceIntensity = -stiff*d;
-            //serr<<"PlaneForceField<DataTypes>::addForce, stiffness = "<<stiffness.getValue()<<sendl;
-            Real dampingIntensity = -damp*d;
-            //serr<<"PlaneForceField<DataTypes>::addForce, dampingIntensity = "<<dampingIntensity<<sendl;
-            DPos force = planeN*forceIntensity - DataTypes::getDPos(v1[i])*dampingIntensity; 
-
-			Real amplitude = force.norm2();
-			if(limit && amplitude > limit)
-				force *= sqrt(limit / amplitude);
-            //serr<<"PlaneForceField<DataTypes>::addForce, force = "<<force<<sendl;
-			Deriv tmpF;
-			DataTypes::setDPos(tmpF, force);
-            f1[i] += tmpF;
-            //this->dfdd[i] = -this->stiffness;
-            this->contacts.push_back(i);
+            DPos force;
+            Real planeOffset = i >= planeD.size() ? planeD[0] : planeD[i];
+            Real d = computePlaneForce<DataTypes>( force, p1[i], v1[i], planeN, planeOffset, stiff, damp, bilateral);
+            const bool addForce = d<0 || bilateral;
+            if(addForce) 
+            {
+                Real amplitude = force.norm2();
+    			if(limit && amplitude > limit)
+                {
+	    			force *= sqrt(limit / amplitude);
+                }
+                Deriv tmpF;
+                DataTypes::setDPos(tmpF, force);
+                f1[i] += tmpF;
+                contacts.push_back( PlaneContact(i,d) );
+            }
+        }
+    }
+    else
+    {
+        for(std::size_t i=0;i<indices.size();++i)
+        {
+            DPos force;
+            Real planeOffset = i >= planeD.size() ? planeD[0] : planeD[i];
+            Real d = computePlaneForce<DataTypes>( force, p1[indices[i] ], v1[indices[i] ], planeN, planeOffset, stiff, damp, bilateral);
+            const bool addForce = d < 0 || bilateral;
+            if(addForce) 
+            {
+                Real amplitude = force.norm2();
+    			if(limit && amplitude > limit)
+                {
+	    			force *= sqrt(limit / amplitude);
+                }    
+                Deriv tmpF;
+                DataTypes::setDPos(tmpF, force);
+                f1[indices[i] ] += tmpF;
+                contacts.push_back( PlaneContact(indices[i], d) );
+            }
         }
     }
 }
@@ -112,15 +146,15 @@ template<class DataTypes>
 void PlaneForceField<DataTypes>::addDForce(const core::MechanicalParams* mparams, DataVecDeriv& df, const DataVecDeriv& dx)
 {
     sofa::helper::WriteAccessor< core::objectmodel::Data< VecDeriv > > df1 = df;
-    sofa::helper::ReadAccessor< core::objectmodel::Data< VecDeriv > > dx1 = dx;
-
+    sofa::helper::ReadAccessor< core::objectmodel::Data< VecDeriv > > dx1  = dx;
+    sofa::helper::ReadAccessor< sofa::Data<sofa::helper::vector<PlaneContact> > > contacts        = this->contacts;  
     df1.resize(dx1.size());
     const Real fact = (Real)(-this->stiffness.getValue() * mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue()));
 	DPos planeN = planeNormal.getValue();
 
-    for (unsigned int i=0; i<this->contacts.size(); i++)
+    for (unsigned int i=0; i<contacts.size(); ++i)
     {
-        unsigned int p = this->contacts[i];
+        unsigned int p = contacts[i].index;
         assert(p<dx1.size());
         DataTypes::setDPos(df1[p], DataTypes::getDPos(df1[p]) + planeN * (fact * (DataTypes::getDPos(dx1[p]) * planeN)));
     }
@@ -130,15 +164,16 @@ template<class DataTypes>
 void PlaneForceField<DataTypes>::addKToMatrix(const core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix )
 {
     const Real fact = (Real)(-this->stiffness.getValue()*mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue()));
+    sofa::helper::ReadAccessor< sofa::Data<sofa::helper::vector<PlaneContact> > > contacts = this->contacts;  
     Deriv normal;
 	DataTypes::setDPos(normal, planeNormal.getValue());
     sofa::core::behavior::MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
     sofa::defaulttype::BaseMatrix* mat = mref.matrix;
     unsigned int offset = mref.offset;
 
-    for (unsigned int i=0; i<this->contacts.size(); i++)
+    for (unsigned int i=0; i<contacts.size(); ++i)
     {
-        unsigned int p = this->contacts[i];
+        unsigned int p = contacts[i].index;
         for (int l=0; l<Deriv::total_size; ++l)
             for (int c=0; c<Deriv::total_size; ++c)
             {
@@ -151,24 +186,32 @@ void PlaneForceField<DataTypes>::addKToMatrix(const core::MechanicalParams* mpar
 template<class DataTypes>
 void PlaneForceField<DataTypes>::updateStiffness( const VecCoord& vx )
 {
-    helper::ReadAccessor<VecCoord> x = vx;
+    sofa::helper::ReadAccessor<VecCoord> x = vx;
+    sofa::helper::ReadAccessor<sofa::Data< sofa::helper::vector< unsigned > > > indices = this->indices; 
+    sofa::helper::ReadAccessor<sofa::Data< VecReal > > planeD = this->planeD;
+    sofa::helper::WriteAccessor< sofa::Data< sofa::helper::vector<PlaneContact> > > contacts = this->contacts;
+    contacts.clear();
 
-    this->contacts.clear();
-
-    unsigned int ibegin = 0;
-    unsigned int iend = x.size();
-
-    if (localRange.getValue()[0] >= 0)
-        ibegin = localRange.getValue()[0];
-
-    if (localRange.getValue()[1] >= 0 && (unsigned int)localRange.getValue()[1]+1 < iend)
-        iend = localRange.getValue()[1]+1;
-
-    for (unsigned int i=ibegin; i<iend; i++)
+    if(indices.empty() )
     {
-        Real d = DataTypes::getCPos(x[i])*planeNormal.getValue()-planeD.getValue();
-        if (d<0)
-            this->contacts.push_back(i);
+        for (unsigned int i=0; i< x.size(); ++i)
+        {
+            const Real planeOffset = i >= planeD.size() ? planeD[0] : planeD[i];
+            Real d = DataTypes::getCPos(x[i])*planeNormal.getValue()-planeOffset;
+            if (d<0)
+                contacts.push_back(PlaneContact(i,d));
+        }
+    }
+    else
+    {
+        for(std::size_t ii=0;ii<indices.size(); ++ii)
+        {
+            unsigned int i = indices[ii];
+            const Real planeOffset = i >= planeD.size() ? planeD[0] : planeD[i];
+            Real d = DataTypes::getCPos(x[i])*planeNormal.getValue()-planeOffset;
+            if (d<0)
+                contacts.push_back(PlaneContact(i,d));           
+        }
     }
 }
 
@@ -200,9 +243,13 @@ void PlaneForceField<DataTypes>::draw(const core::visual::VisualParams* vparams)
 template<class DataTypes>
 void PlaneForceField<DataTypes>::drawPlane(const core::visual::VisualParams* vparams,float size)
 {
-    if (size == 0.0f) size = (float)drawSize.getValue();
-
-    helper::ReadAccessor<VecCoord> p1 = this->mstate->read(core::ConstVecCoordId::position())->getValue();
+    if (size == 0.0f)
+    {
+        size = (float)drawSize.getValue();
+    }
+    
+    sofa::helper::ReadAccessor< sofa::Data<sofa::helper::vector<PlaneContact> > > contacts = this->contacts;  
+    helper::ReadAccessor<VecCoord> p1 = this->mstate->readPositions();
 
     defaulttype::Vec3d normal; normal = planeNormal.getValue();
 
@@ -217,7 +264,16 @@ void PlaneForceField<DataTypes>::drawPlane(const core::visual::VisualParams* vpa
     v2 = v1.cross(normal);
     v2.normalize();
 
-    defaulttype::Vec3d center = normal*planeD.getValue();
+    const VecReal& planeD = this->planeD.getValue();
+
+    Real averageD = std::accumulate( planeD.begin(), planeD.end(), Real(0) );
+
+    if(! planeD.empty() )
+    {
+        averageD /= planeD.size();
+    }
+
+    defaulttype::Vec3d center = normal*averageD;
     defaulttype::Vec3d corners[4];
     corners[0] = center-v1*size-v2*size;
     corners[1] = center+v1*size-v2*size;
@@ -242,27 +298,17 @@ void PlaneForceField<DataTypes>::drawPlane(const core::visual::VisualParams* vpa
     std::vector< defaulttype::Vector3 > pointsLine;
     // lines for points penetrating the plane
 
-    unsigned int ibegin = 0;
-    unsigned int iend = p1.size();
-
-    if (localRange.getValue()[0] >= 0)
-        ibegin = localRange.getValue()[0];
-
-    if (localRange.getValue()[1] >= 0 && (unsigned int)localRange.getValue()[1]+1 < iend)
-        iend = localRange.getValue()[1]+1;
-
-	defaulttype::Vector3 point1,point2;
-    for (unsigned int i=ibegin; i<iend; i++)
+    for (unsigned int ci=0; ci<contacts.size(); ++ci)
     {
-        Real d = DataTypes::getCPos(p1[i])*planeNormal.getValue()-planeD.getValue();
-        CPos p2 = DataTypes::getCPos(p1[i]);
-        p2 += planeNormal.getValue()*(-d);
+        unsigned int i= contacts[ci].index;
+        Real         d= contacts[ci].d;
+        const CPos& point1 = DataTypes::getCPos(p1[i]);
+        CPos point2 = point1;
+        point2 += planeNormal.getValue()*(-d);
         if (d<0)
         {
-            point1 = DataTypes::getCPos(p1[i]);
-            point2 = p2;
-			pointsLine.push_back(point1);
-			pointsLine.push_back(point2);
+			pointsLine.push_back(sofa::defaulttype::Vector3(point1) );
+			pointsLine.push_back(sofa::defaulttype::Vector3(point2) );
         }
     }
     vparams->drawTool()->drawLines(pointsLine, 1, defaulttype::Vec<4,float>(1,0,0,1));
@@ -292,7 +338,13 @@ void PlaneForceField<DataTypes>::computeBBox(const core::ExecParams * params, bo
     v2 = v1.cross(normal);
     v2.normalize();
 
-    defaulttype::Vec3d center = normal*planeD.getValue();
+    const VecReal& planeD = this->planeD.getValue();
+    Real averageD = std::accumulate( planeD.begin(), planeD.end(), Real(0) );
+    if(! planeD.empty() )
+    {
+        averageD /= planeD.size();
+    }
+    defaulttype::Vec3d center = normal*averageD;
     defaulttype::Vec3d corners[4];
     corners[0] = center-v1*size-v2*size;
     corners[1] = center+v1*size-v2*size;

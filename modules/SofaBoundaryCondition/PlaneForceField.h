@@ -30,6 +30,7 @@
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/objectmodel/Data.h>
 #include <sofa/defaulttype/VecTypes.h>
+#include <sofa/core/topology/BaseMeshTopology.h>
 
 namespace sofa
 {
@@ -53,60 +54,119 @@ class PlaneForceField : public core::behavior::ForceField<DataTypes>
 public:
     SOFA_CLASS(SOFA_TEMPLATE(PlaneForceField, DataTypes), SOFA_TEMPLATE(core::behavior::ForceField, DataTypes));
     typedef core::behavior::ForceField<DataTypes> Inherit;
-    typedef typename DataTypes::VecCoord VecCoord;
-    typedef typename DataTypes::VecDeriv VecDeriv;
-    typedef typename DataTypes::Coord Coord;
-    typedef typename DataTypes::Deriv Deriv;
-    typedef typename Coord::value_type Real;
-    typedef core::objectmodel::Data<VecCoord> DataVecCoord;
-    typedef core::objectmodel::Data<VecDeriv> DataVecDeriv;
+    typedef typename DataTypes::VecCoord   VecCoord;
+    typedef typename DataTypes::VecDeriv   VecDeriv;
+    typedef typename DataTypes::Coord      Coord;
+    typedef typename DataTypes::Deriv      Deriv;
+    typedef typename DataTypes::VecReal    VecReal;
+    typedef typename DataTypes::Real       Real;
+	typedef typename DataTypes::CPos       CPos;
+	typedef typename DataTypes::DPos       DPos;
+    typedef typename Inherit::DataVecCoord DataVecCoord;
+    typedef typename Inherit::DataVecDeriv DataVecDeriv;
 
-	typedef typename DataTypes::CPos CPos;
-	typedef typename DataTypes::DPos DPos;
+    typedef sofa::SingleLink< PlaneForceField<DataTypes>, sofa::core::topology::BaseMeshTopology, 
+        sofa::BaseLink::FLAG_STRONGLINK | sofa::BaseLink::FLAG_STOREPATH > BaseMeshTopologyLink;
 
 protected:
-    sofa::helper::vector<unsigned int> contacts;
+
+    struct PlaneContact
+    {
+        unsigned int index;
+        Real         d;
+
+        PlaneContact(unsigned int index, Real d)
+        :index(index)
+        ,d(d)
+        {
+        }
+
+        PlaneContact()
+        :index(sofa::core::topology::BaseMeshTopology::InvalidID)
+        ,d(0)
+        {
+        }
+
+        inline friend std::ostream& operator<< ( std::ostream& out, const PlaneContact& planeContact )
+        {
+            out << "PLANECONTACT"
+                << " index= " << planeContact.index
+                << " d= "     << planeContact.d 
+                << " END\n";
+            return out;
+        }
+
+        inline friend std::istream& operator>> ( std::istream& in, PlaneContact& planeContact )
+        {
+            std::string str;
+            if ((in >> str) && (str == "PLANECONTACT"))
+            {
+                while (in >> str)
+                {
+                    if (str == "END")
+                    {
+                        break;
+                    }
+                    else if( str=="index=" )
+                    {
+                        in >> planeContact.index;
+                    }
+                    else if( str=="d=" )
+                    {
+                        in >> planeContact.d;
+                    }
+                }
+            }
+            return in;
+        }
+    };
+
+
 
     PlaneForceFieldInternalData<DataTypes> data;
 
 public:
 
-    Data<DPos> planeNormal;
-    Data<Real> planeD;
-    Data<Real> stiffness;
-    Data<Real> damping;
-	Data<Real> maxForce;
-    Data<defaulttype::Vec3f> color;
-    Data<bool> bDraw;
-    Data<Real> drawSize;
-
-
-    /// optional range of local DOF indices. Any computation involving only indices outside of this range are discarded (useful for parallelization using mesh partitionning)
-    Data< defaulttype::Vec<2,int> > localRange;
-
+    Data<DPos>                                        planeNormal;
+    Data<VecReal>                                     planeD;
+    Data<Real>                                        stiffness;
+    Data<Real>                                        damping;
+	Data<Real>                                        maxForce;
+    Data<sofa::helper::vector< unsigned > >           indices; //< BaseMeshTopology should provide a way to get the PointID from the array of points.
+    Data<defaulttype::Vec3f>                          color;
+    Data<bool>                                        bDraw;
+    Data<Real>                                        drawSize;
     /// option bilateral : if true, the force field is applied on both side of the plane
-   Data<bool> bilateral;
+    Data<bool>                                        bilateral;
+    sofa::Data< sofa::helper::vector<PlaneContact > > contacts;
+
 protected:
     PlaneForceField()
         : planeNormal(initData(&planeNormal, "normal", "plane normal"))
-        , planeD(initData(&planeD, (Real)0, "d", "plane d coef"))
+        , planeD(initData(&planeD, VecReal(1, Real(0)), "d", "plane d coef, either one value for all"))
         , stiffness(initData(&stiffness, (Real)500, "stiffness", "force stiffness"))
         , damping(initData(&damping, (Real)5, "damping", "force damping"))
         , maxForce(initData(&maxForce, (Real)0, "maxForce", "if non-null, the max force that can be applied to the object"))
+        , indices(initData(&indices,"indices","If not empty the list of indices where this forcefield is applied"))
 		, color(initData(&color, defaulttype::Vec3f(0.0f,.5f,.2f), "color", "plane color"))
         , bDraw(initData(&bDraw, false, "draw", "enable/disable drawing of plane"))
         , drawSize(initData(&drawSize, (Real)10.0f, "drawSize", "plane display size if draw is enabled"))
-        , localRange( initData(&localRange, defaulttype::Vec<2,int>(-1,-1), "localRange", "optional range of local DOF indices. Any computation involving only indices outside of this range are discarded (useful for parallelization using mesh partitionning)" ) )
         , bilateral( initData(&bilateral, false, "bilateral", "if true the plane force field is applied on both sides"))
+        , contacts( initData(&contacts, "contacts","The information related to the points in violation with the plane"))
     {
 		Deriv n;
 		DataTypes::set(n, 0, 1, 0);
         planeNormal.setValue(DataTypes::getDPos(n));
     }
+
 public:
+
     void setPlane(const Deriv& normal, Real d);
 
-    void setMState(  core::behavior::MechanicalState<DataTypes>* mstate ) { this->mstate = mstate; }
+    void setMState(  core::behavior::MechanicalState<DataTypes>* mstate ) 
+    { 
+        this->mstate = mstate; 
+    }
 
     void setStiffness(Real stiff)
     {
