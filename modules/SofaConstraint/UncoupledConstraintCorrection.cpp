@@ -112,7 +112,7 @@ SOFA_CONSTRAINT_API void UncoupledConstraintCorrection< defaulttype::Rigid3Types
             else
                 serr << "WARNING : no mass found" << sendl;
         }
-        else
+        else if (!defaultCompliance.isSet())
         {
             serr << "\n WARNING : node is not found => massValue could be incorrect in addComplianceInConstraintSpace function" << sendl;
         }

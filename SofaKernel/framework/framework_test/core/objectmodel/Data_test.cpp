@@ -38,6 +38,12 @@ struct DataLink_test: public ::testing::Test
     core::objectmodel::Data<int> data1;
     core::objectmodel::Data<int> data2;
 
+    DataLink_test()
+    :data1("data1")
+    ,data2("data2")
+    {
+    }
+
     /// Create a link between the two datas
     void SetUp()
     {
@@ -74,6 +80,7 @@ struct vectorData_test: public ::testing::Test
 
     vectorData_test()
         : vDataInt(NULL,"","")
+        , data1("data1")
     { }
 
     void SetUp()
