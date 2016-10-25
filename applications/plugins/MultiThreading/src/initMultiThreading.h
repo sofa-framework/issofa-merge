@@ -1,6 +1,6 @@
 /******************************************************************************
-*       SOFA, Simulation Open-Framework Architecture, development version     *
-*                (c) 2006-2016 INRIA, USTL, UJF, CNRS, MGH                    *
+*       SOFA, Simulation Open-Framework Architecture, version 1.0 beta 4      *
+*                (c) 2006-2009 MGH, INRIA, USTL, UJF, CNRS                    *
 *                                                                             *
 * This library is free software; you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as published by    *
@@ -16,28 +16,47 @@
 * along with this library; if not, write to the Free Software Foundation,     *
 * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.          *
 *******************************************************************************
-*                              SOFA :: Framework                              *
+*                               SOFA :: Modules                               *
 *                                                                             *
-* Authors: The SOFA Team (see Authors.txt)                                    *
+* Authors: The SOFA Team and external contributors (see Authors.txt)          *
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#include <sofa/core/objectmodel/ClassInfo.h>
+#ifndef PLUGIN_MULTITHREADING_INIT_H
+#define PLUGIN_MULTITHREADING_INIT_H
+
+#include <sofa/SofaGeneral.h>
+
+#ifndef WIN32
+    #define SOFA_EXPORT_DYNAMIC_LIBRARY 
+    #define SOFA_IMPORT_DYNAMIC_LIBRARY
+    #define SOFA_MULTITHREADING_PLUGIN_API
+#else
+    #ifdef SOFA_MULTITHREADING_PLUGIN
+		#define SOFA_EXPORT_DYNAMIC_LIBRARY __declspec( dllexport )
+		#define SOFA_MULTITHREADING_PLUGIN_API SOFA_EXPORT_DYNAMIC_LIBRARY
+    #else
+		#define SOFA_IMPORT_DYNAMIC_LIBRARY __declspec( dllimport )
+		#define SOFA_MULTITHREADING_PLUGIN_API SOFA_IMPORT_DYNAMIC_LIBRARY
+    #endif
+#endif
+
 
 namespace sofa
 {
-
-namespace core
+namespace component
 {
+	extern "C" {
+                SOFA_MULTITHREADING_PLUGIN_API void initExternalModule();
+                SOFA_MULTITHREADING_PLUGIN_API const char* getModuleName();
+                SOFA_MULTITHREADING_PLUGIN_API const char* getModuleVersion();
+                SOFA_MULTITHREADING_PLUGIN_API const char* getModuleLicense();		
+                SOFA_MULTITHREADING_PLUGIN_API const char* getModuleDescription();
+                SOFA_MULTITHREADING_PLUGIN_API const char* getModuleComponentList();
+	}
 
-namespace objectmodel
-{
+} //component
+} //sofa 
 
-std::map<sofa::helper::TypeInfo, ClassInfo*> ClassInfo::classes;
 
-} // namespace objectmodel
-
-} // namespace core
-
-} // namespace sofa
-
+#endif /* PLUGIN_XICATH_INIT_H */

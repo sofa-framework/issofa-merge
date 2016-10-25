@@ -638,6 +638,7 @@ void MeshTopology::init()
         quadUpdate->setName("quadUpdate");
         this->addSlave(quadUpdate);
     }
+
 }
 
 void MeshTopology::clear()

@@ -61,6 +61,7 @@ FreeMotionAnimationLoop::FreeMotionAnimationLoop(simulation::Node* gnode)
     : Inherit(gnode)
     , displayTime(initData(&displayTime,false,"displayTime","Dump the computation times"))
     , m_solveVelocityConstraintFirst(initData(&m_solveVelocityConstraintFirst , false, "solveVelocityConstraintFirst", "solve separately velocity constraint violations before position constraint violations"))
+    , d_threadsafevisitor( initData( &d_threadsafevisitor, false, "threadsafevisitor", "If true, do not use realloc and free visitors in fwdInteractionForceField.") )
     , constraintSolver(NULL)
     , defaultSolver(NULL)
 {
@@ -86,8 +87,8 @@ void FreeMotionAnimationLoop::init()
 
     {
     simulation::common::VectorOperations vop(core::ExecParams::defaultInstance(), this->getContext());
-    MultiVecDeriv dx(&vop, core::VecDerivId::dx() ); dx.realloc( &vop, true, true );
-    MultiVecDeriv df(&vop, core::VecDerivId::dforce() ); df.realloc( &vop, true, true );
+    MultiVecDeriv dx(&vop, core::VecDerivId::dx() ); dx.realloc( &vop, !d_threadsafevisitor.getValue(), true );
+    MultiVecDeriv df(&vop, core::VecDerivId::dforce() ); df.realloc( &vop, !d_threadsafevisitor.getValue(), true );
     }
 
 
@@ -125,8 +126,8 @@ void FreeMotionAnimationLoop::step(const sofa::core::ExecParams* params, SReal d
     MultiVecDeriv freeVel(&vop, core::VecDerivId::freeVelocity() );
 
     {
-        MultiVecDeriv dx(&vop, core::VecDerivId::dx() ); dx.realloc( &vop, true, true );
-        MultiVecDeriv df(&vop, core::VecDerivId::dforce() ); df.realloc( &vop, true, true );
+    MultiVecDeriv dx(&vop, core::VecDerivId::dx() ); dx.realloc( &vop, !d_threadsafevisitor.getValue(), true );
+    MultiVecDeriv df(&vop, core::VecDerivId::dforce() ); df.realloc( &vop, !d_threadsafevisitor.getValue(), true );
     }
 
     // This solver will work in freePosition and freeVelocity vectors.
