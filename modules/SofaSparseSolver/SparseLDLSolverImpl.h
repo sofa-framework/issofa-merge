@@ -167,9 +167,14 @@ public:
     typedef TThreadManager ThreadManager;
     typedef typename TMatrix::Real Real;
 
+    Data<int> d_orderingMode;
+
 protected :
 
-    SparseLDLSolverImpl() : Inherit() {}
+    SparseLDLSolverImpl()
+    : Inherit(),
+      d_orderingMode(initData(&d_orderingMode,1,"orderingMode", "Permutation computation algorithm: 0 = disabled, 1 = METIS (available)"))
+    {}
 
     template<class VecInt,class VecReal>
     void solve_cpu(Real * x,const Real * b,SparseLDLImplInvertData<VecInt,VecReal> * data) {
@@ -286,7 +291,8 @@ protected :
     template<class VecInt,class VecReal>
     void factorize(int n,int * M_colptr, int * M_rowind, Real * M_values, SparseLDLImplInvertData<VecInt,VecReal> * data) {
         const int orderingMode = this->d_orderingMode.getValue();
-        bool new_factorization_needed = data->P_colptr.size() == 0 || data->P_rowind.size() == 0 || data->orderingMode != orderingMode
+        data->new_factorization_needed = data->P_colptr.size() == 0 || data->P_rowind.size() == 0 || data->orderingMode != orderingMode
+                || CSPARSE_need_symbolic_factorization(n, M_colptr, M_rowind, data->n, (int *) &data->P_colptr[0],(int *) &data->P_rowind[0]);
 
         data->n = n;
         data->P_nnz = M_colptr[data->n];
@@ -308,7 +314,7 @@ protected :
             memcpy(&data->P_rowind[0],M_rowind,data->P_nnz * sizeof(int));
 
             //ordering function
-            LDL_ordering(data->n,M_colptr,M_rowind,&data->perm[0],&data->invperm[0], orderingMode);
+            LDL_ordering(data->n,M_colptr,M_rowind,&data->perm[0],&data->invperm[0]);
 
             data->Parent.clear();
             data->Parent.resize(data->n);
