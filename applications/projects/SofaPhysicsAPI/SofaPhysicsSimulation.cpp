@@ -715,7 +715,7 @@ void SofaPhysicsSimulation::Impl::drawGL()
                 currentCamera->setViewport(vWidth, vHeight);
             calcProjection();
         }
-        currentCamera->getOpenGLMatrix(lastModelviewMatrix);
+        currentCamera->getOpenGLModelViewMatrix(lastModelviewMatrix);
         glMatrixMode(GL_PROJECTION);
         glLoadMatrixd(lastProjectionMatrix);
         glMatrixMode(GL_MODELVIEW);

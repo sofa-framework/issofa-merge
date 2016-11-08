@@ -4,7 +4,7 @@
 #include "SofaPhysicsAPI.h"
 
 //#include <SofaBaseVisual/VisualModelImpl.h>
-#include <SofaOpenglVisual/OglTetrahedralModel.h>
+#include <VolumetricRendering/OglTetrahedralModel.h>
 #include <sofa/core/visual/Shader.h>
 #include <sofa/defaulttype/Vec.h>
 
