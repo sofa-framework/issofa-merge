@@ -4,7 +4,7 @@
 #include "SofaPhysicsAPI.h"
 
 #include <SofaBaseVisual/VisualModelImpl.h>
-#include <SofaOpenglVisual/OglTetrahedralModel.h>
+#include <VolumetricRendering/OglTetrahedralModel.h>
 #include <sofa/core/visual/VisualModel.h>
 #include <sofa/core/visual/Shader.h>
 
@@ -52,6 +52,7 @@ public:
     typedef SofaOutputMesh::Coord Coord;
     typedef SofaOutputMesh::Deriv Deriv;
     typedef SofaOutputMesh::TexCoord TexCoord;
+    typedef SofaOutputMesh::Edge Edge;
     typedef SofaOutputMesh::Triangle Triangle;
     typedef SofaOutputMesh::Quad Quad;
     typedef sofa::core::visual::ShaderElement SofaVAttribute;

@@ -212,7 +212,8 @@ unsigned int SofaPhysicsOutputMesh::Impl::getNbAttributes(int index)            
   if ((unsigned)index >= sVA.size())
     return 0;
   else 
-    return dynamic_cast< Data<ResizableExtVector<Real> >* >(sVA[index]->getSEValue())->getValue().size();
+    return sVA[index]->getSETotalSize();
+    //return dynamic_cast< Data<ResizableExtVector<Real> >* >(sVA[index]->getSEValue())->getValue().size();
 }
 
 const char*  SofaPhysicsOutputMesh::Impl::getVAttributeName(int index)          ///< vertices attribute name
@@ -241,8 +242,10 @@ const Real*  SofaPhysicsOutputMesh::Impl::getVAttributeValue(int index)         
 {
     if ((unsigned)index >= sVA.size())
         return NULL;
+    else if (sVA[index]->getSEValueType() == SofaVAttribute::SV_FLOAT)
+        return (const Real*)sVA[index]->getSEValuePointer();
     else
-        return (const Real*)((ResizableExtVector<Real>*)sVA[index]->getSEValue()->getValueVoidPtr())->getData();
+        return NULL;
 }
 
 int          SofaPhysicsOutputMesh::Impl::getVAttributeRevision(int index)      ///< changes each time vertices attribute is updated
@@ -259,15 +262,19 @@ int          SofaPhysicsOutputMesh::Impl::getVAttributeRevision(int index)      
 
 unsigned int SofaPhysicsOutputMesh::Impl::getNbLines() ///< number of lines
 {
-    return 0; // not yet supported
+    Data<ResizableExtVector<Edge> > * data = &(sObj->m_edges);
+    return (unsigned int) data->getValue().size();
 }
 const Index* SofaPhysicsOutputMesh::Impl::getLines()   ///< lines topology (2 indices / line)
 {
-    return NULL;
+    Data<ResizableExtVector<Edge> > * data = &(sObj->m_edges);
+    return (const Index*) data->getValue().getData();
 }
 int SofaPhysicsOutputMesh::Impl::getLinesRevision()    ///< changes each time lines data is updated
 {
-    return 0;
+    Data<ResizableExtVector<Edge> > * data = &(sObj->m_edges);
+    data->getValue(); // make sure the data is updated
+    return data->getCounter();
 }
 
 unsigned int SofaPhysicsOutputMesh::Impl::getNbTriangles() ///< number of triangles
