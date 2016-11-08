@@ -70,13 +70,13 @@ void IndexValueMapper<VecT>::reinit()
 template <class VecT>
 void IndexValueMapper<VecT>::update()
 {
-    helper::ReadAccessor< Data< helper::vector<Value> > > inputValues = f_inputValues;
+    helper::ReadAccessor< Data< VecValue > > inputValues = f_inputValues;
     helper::ReadAccessor< Data< helper::vector<Index> > > indices = f_indices;
     const Value& value = f_value.getValue();
 
     cleanDirty();
 
-    helper::WriteOnlyAccessor< Data< helper::vector<Value> > > outputValues = f_outputValues;
+    helper::WriteOnlyAccessor< Data< VecValue > > outputValues = f_outputValues;
 
     const Value& defaultValue = p_defaultValue.getValue();
 
