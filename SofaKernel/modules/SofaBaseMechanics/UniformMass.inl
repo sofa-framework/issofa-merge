@@ -173,7 +173,10 @@ void UniformMass<DataTypes, MassType>::reinit()
         mass.endEdit();
     }
     else
-        totalMass.setValue ( indices.size() * (Real)mass.getValue() );
+    {
+        sofa::defaulttype::MassAccessor<MassType> accessor;
+        totalMass.setValue ( indices.size() * (Real)accessor( mass.getValue() ) );
+    }
 
 }
 
