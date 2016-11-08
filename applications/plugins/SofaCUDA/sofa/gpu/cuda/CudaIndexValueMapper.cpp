@@ -37,11 +37,11 @@ namespace component
 namespace engine
 {
 
-template class IndexValueMapper<gpu::cuda::CudaVec3fTypes>;
-template class IndexValueMapper<gpu::cuda::CudaVec3f1Types>;
+template class IndexValueMapper<gpu::cuda::CudaVector<defaulttype::Vec3f> >;
+template class IndexValueMapper<gpu::cuda::CudaVector<gpu::cuda::Vec3f1> >;
 #ifdef SOFA_GPU_CUDA_DOUBLE
-template class IndexValueMapper<gpu::cuda::CudaVec3dTypes>;
-template class IndexValueMapper<gpu::cuda::CudaVec3d1Types>;
+template class IndexValueMapper<gpu::cuda::CudaVector<defaulttype::Vec3d> >;
+template class IndexValueMapper<gpu::cuda::CudaVector<gpu::cuda::Vec3d1> >;
 #endif // SOFA_GPU_CUDA_DOUBLE
 
 } // namespace engine
@@ -57,11 +57,11 @@ namespace cuda
 SOFA_DECL_CLASS(CudaIndexValueMapper)
 
 int IndexValueMapperClass = core::RegisterObject("Supports GPU-side computations using CUDA")
-        .add< component::engine::IndexValueMapper<CudaVec3fTypes> >()
-        .add< component::engine::IndexValueMapper<CudaVec3f1Types> >()
+        .add< component::engine::IndexValueMapper<gpu::cuda::CudaVector<defaulttype::Vec3f> > >()
+        .add< component::engine::IndexValueMapper<gpu::cuda::CudaVector<gpu::cuda::Vec3f1> > >()
 #ifdef SOFA_GPU_CUDA_DOUBLE
-        .add< component::engine::IndexValueMapper<CudaVec3dTypes> >()
-        .add< component::engine::IndexValueMapper<CudaVec3d1Types> >()
+        .add< component::engine::IndexValueMapper<gpu::cuda::CudaVector<defaulttype::Vec3d> > >()
+        .add< component::engine::IndexValueMapper<gpu::cuda::CudaVector<gpu::cuda::Vec3d1> > >()
 #endif // SOFA_GPU_CUDA_DOUBLE
         ;
 

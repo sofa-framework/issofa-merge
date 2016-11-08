@@ -55,11 +55,13 @@ template<class T>
 class CudaVector : public helper::vector<T,CudaMemoryManager<T> >
 {
 public :
-    typedef size_t size_type;
+    typedef typename helper::vector<T,CudaMemoryManager<T> >::size_type size_type;
 
     CudaVector() : helper::vector<T,CudaMemoryManager<T> >() {}
 
     CudaVector(size_type n) : helper::vector<T,CudaMemoryManager<T> >(n) {}
+
+    CudaVector(size_type n, const T& value) : helper::vector<T,CudaMemoryManager<T> >(n,value) {}
 
     CudaVector(const helper::vector<T,CudaMemoryManager< T > >& v) : helper::vector<T,CudaMemoryManager<T> >(v) {}
 

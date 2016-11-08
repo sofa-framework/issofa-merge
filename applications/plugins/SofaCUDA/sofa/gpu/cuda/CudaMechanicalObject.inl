@@ -885,7 +885,7 @@ void MechanicalObjectInternalData< gpu::cuda::CudaVectorTypes<TCoord,TDeriv,TRea
             {
                 Data<VecCoord>* d_vv = m->write((core::VecCoordId)v);
                 VecCoord* vv = d_vv->beginEdit();
-                vv->recreate(m->vsize);
+                vv->recreate(m->getSize());
                 Kernels::vClear(vv->size(), vv->deviceWrite());
                 d_vv->endEdit();
             }
@@ -893,7 +893,7 @@ void MechanicalObjectInternalData< gpu::cuda::CudaVectorTypes<TCoord,TDeriv,TRea
             {
                 Data<VecDeriv>* d_vv = m->write((core::VecDerivId)v);
                 VecDeriv* vv = d_vv->beginEdit();
-                vv->recreate(m->vsize);
+                vv->recreate(m->getSize());
                 Kernels::vClear(vv->size(), vv->deviceWrite());
                 d_vv->endEdit();
             }
@@ -1721,7 +1721,7 @@ void MechanicalObjectInternalData< gpu::cuda::CudaRigidTypes<N, real> >::vOp(Mai
             {
                 Data<VecCoord>* d_vv = m->write((core::VecCoordId)v);
                 VecCoord* vv = d_vv->beginEdit();
-                vv->recreate(m->vsize);
+                vv->recreate(m->getSize());
                 Kernels::vClearCoord(vv->size(), vv->deviceWrite());
                 d_vv->endEdit();
             }
@@ -1729,7 +1729,7 @@ void MechanicalObjectInternalData< gpu::cuda::CudaRigidTypes<N, real> >::vOp(Mai
             {
                 Data<VecDeriv>* d_vv = m->write((core::VecDerivId)v);
                 VecDeriv* vv = d_vv->beginEdit();
-                vv->recreate(m->vsize);
+                vv->recreate(m->getSize());
                 Kernels::vClearDeriv(vv->size(), vv->deviceWrite());
                 d_vv->endEdit();
             }
@@ -2007,7 +2007,7 @@ template<int N, class real>
 void MechanicalObjectInternalData< gpu::cuda::CudaRigidTypes<N, real> >::vMultiOp(Main* m, const core::ExecParams* params, const VMultiOp& ops)
 {
 #ifdef DEBUG
-	std::cerr<<"MechanicalObjectInternalData::vMultiOp currently not implemented for CudaRigidTypes !"<<std::endl;
+    std::cerr<<"MechanicalObjectInternalData::vMultiOp currently not implemented for CudaRigidTypes !"<<std::endl;
 #endif
     // TODO : make corresponding kernels
 

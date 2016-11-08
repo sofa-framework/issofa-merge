@@ -48,9 +48,9 @@ extern "C"
     void UniformMassCuda3f1_accFromF(unsigned int size, float mass, void* a, const void* f);
     void UniformMassCuda3f1_addForce(unsigned int size, const float *mg, void* f);
 
-	void UniformMassCudaRigid3f_addMDx(unsigned int size, float mass, void* res, const void* dx);
-	void UniformMassCudaRigid3f_accFromF(unsigned int size, float mass, void* a, const void* dx);
-	void UniformMassCudaRigid3f_addForce(unsigned int size, const float* mg, void* f);
+    void UniformMassCudaRigid3f_addMDx(unsigned int size, float mass, void* res, const void* dx);
+    void UniformMassCudaRigid3f_accFromF(unsigned int size, float mass, void* a, const void* dx);
+    void UniformMassCudaRigid3f_addForce(unsigned int size, const float* mg, void* f);
 
 #ifdef SOFA_GPU_CUDA_DOUBLE
 
@@ -159,42 +159,42 @@ void UniformMass<CudaVec3f1Types, float>::addForce(const core::MechanicalParams*
 template<>
 void UniformMass<gpu::cuda::CudaRigid3fTypes, sofa::defaulttype::RigidMass<3,float> >::addMDx(const core::MechanicalParams * /*mparams*/, DataVecDeriv &f, const DataVecDeriv &dx, SReal factor)
 {
-	VecDeriv& _f = *f.beginEdit();
-	const VecDeriv& _dx = dx.getValue();
+    VecDeriv& _f = *f.beginEdit();
+    const VecDeriv& _dx = dx.getValue();
 
 
-	UniformMassCudaRigid3f_addMDx(_dx.size(), (float)(mass.getValue().mass*factor), _f.deviceWrite(), _dx.deviceRead());
+    UniformMassCudaRigid3f_addMDx(_dx.size(), (float)(mass.getValue().mass*factor), _f.deviceWrite(), _dx.deviceRead());
 
 //	for(int i = 0 ; i < _f.size() ; ++i)
 //		std::cout << "CPU "<< i << "  : " << _f[i] << std::endl;
 
-	f.endEdit();
+    f.endEdit();
 }
 
 template<>
 void UniformMass<gpu::cuda::CudaRigid3fTypes, sofa::defaulttype::RigidMass<3,float> >::accFromF(const core::MechanicalParams * /*mparams*/, DataVecDeriv &a, const DataVecDeriv &f)
 {
 
-	VecDeriv& _a = *a.beginEdit();
-	VecDeriv _f = f.getValue();
+    VecDeriv& _a = *a.beginEdit();
+    VecDeriv _f = f.getValue();
 
-	UniformMassCudaRigid3f_accFromF(_a.size(), mass.getValue().mass, _a.deviceWrite(), _f.deviceRead());
+    UniformMassCudaRigid3f_accFromF(_a.size(), mass.getValue().mass, _a.deviceWrite(), _f.deviceRead());
 
-	a.endEdit();
+    a.endEdit();
 }
 
 template<>
 void UniformMass<gpu::cuda::CudaRigid3fTypes, sofa::defaulttype::RigidMass<3,float> >::addForce(const core::MechanicalParams * /*mparams*/, DataVecDeriv &f, const DataVecCoord& /*x*/, const DataVecDeriv& /*v*/)
 {
 
-	VecDeriv& _f = *f.beginEdit();
-	defaulttype::Vec3d g(this->getContext()->getGravity());
+    VecDeriv& _f = *f.beginEdit();
+    defaulttype::Vec3d g(this->getContext()->getGravity());
 
-	float m = mass.getValue().mass;
-	const float mg[] = { (float)(m*g(0)), (float)(m*g(1)), (float)(m*g(2)) };
-	UniformMassCudaRigid3f_addForce(_f.size(), mg, _f.deviceWrite());
+    float m = mass.getValue().mass;
+    const float mg[] = { (float)(m*g(0)), (float)(m*g(1)), (float)(m*g(2)) };
+    UniformMassCudaRigid3f_addForce(_f.size(), mg, _f.deviceWrite());
 
-	f.endEdit();
+    f.endEdit();
 
 }
 
@@ -217,7 +217,8 @@ SReal UniformMass<gpu::cuda::CudaRigid3fTypes,sofa::defaulttype::RigidMass<3,flo
 template <>
 SReal UniformMass<gpu::cuda::CudaRigid3fTypes,sofa::defaulttype::RigidMass<3,float> >::getElementMass(unsigned int ) const
 {
-    return (SReal)(mass.getValue().mass);
+    sofa::defaulttype::MassAccessor< MassType > accessor;
+    return (SReal)( accessor( mass.getValue() ) );
 }
 
 template <>
@@ -384,7 +385,8 @@ SReal UniformMass<gpu::cuda::CudaRigid3dTypes,sofa::defaulttype::RigidMass<3,dou
 template <>
 SReal UniformMass<gpu::cuda::CudaRigid3dTypes,sofa::defaulttype::RigidMass<3,double> >::getElementMass(unsigned int ) const
 {
-    return (SReal)(mass.getValue().mass);
+    sofa::defaulttype::MassAccessor< MassType > accessor;
+    return (SReal)( accessor( mass.getValue() ) );
 }
 
 template <>

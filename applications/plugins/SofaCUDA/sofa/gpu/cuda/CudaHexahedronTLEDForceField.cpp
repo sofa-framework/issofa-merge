@@ -68,7 +68,7 @@ CudaHexahedronTLEDForceField::CudaHexahedronTLEDForceField()
     , isViscoelastic(initData(&isViscoelastic,(unsigned int)0,"isViscoelastic","Viscoelasticity flag"))
     , isAnisotropic(initData(&isAnisotropic,(unsigned int)0,"isAnisotropic","Anisotropy flag"))
     , preferredDirection(initData(&preferredDirection, "preferredDirection","Transverse isotropy direction"))
-    , nbElems(0), Lamda(0), Mu(0)
+    , nbElems(0), Lambda(0), Mu(0)
 {
 }
 

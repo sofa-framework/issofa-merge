@@ -140,6 +140,12 @@ public:
         clearSize = 0;
         resize ( n );
     }
+    vector ( size_type n, const T& value )
+        : vector(n)
+    {
+
+    }
+
     vector ( const vector<T,MemoryManager >& v )
         : vectorSize ( 0 ), allocSize ( 0 ), hostPointer ( NULL ), deviceIsValid ( ALL_DEVICE_VALID ), hostIsValid ( true ), bufferIsRegistered(false)
 #ifndef SOFA_NO_OPENGL

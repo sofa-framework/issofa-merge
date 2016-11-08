@@ -78,7 +78,7 @@ void PlaneForceField<gpu::cuda::CudaVec3fTypes>::addForce(const core::Mechanical
     const VecDeriv& v = d_v.getValue();
 
     data.plane.normal = planeNormal.getValue();
-    data.plane.d = planeD.getValue();
+    data.plane.d = planeD.getValue()[0];
     data.plane.stiffness = stiffness.getValue();
     data.plane.damping = damping.getValue();
     f.resize(x.size());
@@ -113,7 +113,7 @@ void PlaneForceField<gpu::cuda::CudaVec3f1Types>::addForce(const core::Mechanica
     const VecDeriv& v = d_v.getValue();
 
     data.plane.normal = planeNormal.getValue();
-    data.plane.d = planeD.getValue();
+    data.plane.d = planeD.getValue()[0];
     data.plane.stiffness = stiffness.getValue();
     data.plane.damping = damping.getValue();
     f.resize(x.size());
@@ -149,7 +149,7 @@ void PlaneForceField<gpu::cuda::CudaVec3dTypes>::addForce(const core::Mechanical
     const VecDeriv& v = d_v.getValue();
 
     data.plane.normal = planeNormal.getValue();
-    data.plane.d = planeD.getValue();
+    data.plane.d = planeD.getValue()[0];
     data.plane.stiffness = stiffness.getValue();
     data.plane.damping = damping.getValue();
     f.resize(x.size());
@@ -184,7 +184,7 @@ void PlaneForceField<gpu::cuda::CudaVec3d1Types>::addForce(const core::Mechanica
     const VecDeriv& v = d_v.getValue();
 
     data.plane.normal = planeNormal.getValue();
-    data.plane.d = planeD.getValue();
+    data.plane.d = planeD.getValue()[0];
     data.plane.stiffness = stiffness.getValue();
     data.plane.damping = damping.getValue();
     f.resize(x.size());
