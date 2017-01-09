@@ -99,13 +99,11 @@ public:
 
 
     Data< helper::vector<unsigned> > indexPairs;                     ///< Two indices per child: the parent, and the index within the parent
-    Data< vector<unsigned> > d_identityIndices;              ///< One index per child to select the parent : the index in the parent is the same as the child index
+    Data< helper::vector<unsigned> > d_identityIndices;              ///< One index per child to select the parent : the index in the parent is the same as the child index
 
 protected :
 
-    SubsetMultiMapping();
-        , d_identityIndices( initData( &d_identityIndices, vector<unsigned>(), "identityIndices", "One index per child to select the parent : the index in the parent is the same as the child index"))
-    virtual ~SubsetMultiMapping();
+    SubsetMultiMapping();        virtual ~SubsetMultiMapping();
 
     helper::vector<defaulttype::BaseMatrix*> baseMatrices;      ///< Jacobian of the mapping, in a vector
 

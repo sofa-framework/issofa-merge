@@ -43,9 +43,9 @@ namespace mapping
 template <class TIn, class TOut>
 void SubsetMultiMapping<TIn, TOut>::fillIndexPairs()
 {
-    const vector<unsigned>& identityIndices = d_identityIndices.getValue();
+    const helper::vector<unsigned>& identityIndices = d_identityIndices.getValue();
 
-    vector<unsigned>& w_indexPairs = *indexPairs.beginEdit();
+    helper::vector<unsigned>& w_indexPairs = *indexPairs.beginEdit();
     w_indexPairs.clear();
     w_indexPairs.resize(2 * identityIndices.size());
 
@@ -111,6 +111,8 @@ template <class TIn, class TOut>
 SubsetMultiMapping<TIn, TOut>::SubsetMultiMapping()
     : Inherit()
     , indexPairs( initData( &indexPairs, helper::vector<unsigned>(), "indexPairs", "list of couples (parent index + index in the parent)"))
+    , d_identityIndices( initData( &d_identityIndices, helper::vector<unsigned>(), "identityIndices", "One index per child to select the parent : the index in the parent is the same as the child index"))
+
 {}
 
 template <class TIn, class TOut>
