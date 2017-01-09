@@ -6,6 +6,9 @@ set(HEADER_FILES
     PrecomputedLinearSolver.inl
     SparseCholeskySolver.h
     SparseLUSolver.h
+    SparseLDLSolverImpl.h
+    SparseLDLSolver.h
+    SparseLDLSolver.inl
     config.h
     initSparseSolver.h
 )
@@ -14,16 +17,9 @@ set(SOURCE_FILES
     PrecomputedLinearSolver.cpp
     SparseCholeskySolver.cpp
     SparseLUSolver.cpp
+    SparseLDLSolver.cpp
     initSparseSolver.cpp
 )
-
-if(SOFA_HAVE_METIS)
-    list(APPEND HEADER_FILES SparseLDLSolver.h SparseLDLSolver.inl SparseLDLSolverImpl.h)
-    list(APPEND SOURCE_FILES SparseLDLSolver.h SparseLDLSolver.cpp)
-    message(STATUS "SofaSparseSolver: metis was found, SparseLDLSolver will be built")
-else()
-    message(STATUS "SofaSparseSolver: metis was not found, SparseLDLSolver won't be built")
-endif()
 
 if(SOFA_HAVE_CSPARSE)
     list(APPEND HEADER_FILES SparseCholeskySolver.h)
