@@ -239,8 +239,17 @@ void PartialFixedConstraint<DataTypes>::projectJacobianMatrix(const core::Mechan
 
 // Matrix Integration interface
 template <class DataTypes>
-void PartialFixedConstraint<DataTypes>::applyConstraint(defaulttype::BaseMatrix *mat, unsigned int offset)
+void PartialFixedConstraint<DataTypes>::applyConstraint(const sofa::core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix)
 {
+
+    sofa::core::behavior::MultiMatrixAccessor::MatrixRef r = matrix->getMatrix(this->mstate.get(mparams));
+    
+    if(!r)
+    {
+        return;
+    }
+    sofa::defaulttype::BaseMatrix* mat = r.matrix;
+    unsigned int offset                = r.offset;
     //sout << "applyConstraint in Matrix with offset = " << offset << sendl;
     //cerr<<" PartialFixedConstraint<DataTypes>::applyConstraint(defaulttype::BaseMatrix *mat, unsigned int offset) is called "<<endl;
 
@@ -263,16 +272,21 @@ void PartialFixedConstraint<DataTypes>::applyConstraint(defaulttype::BaseMatrix 
             if( blockedDirection[c] ) mat->set(offset + N * (*it) + c, offset + N * (*it) + c, 1.0);
         }
     }
+
+    
 }
 
 template <class DataTypes>
-void PartialFixedConstraint<DataTypes>::applyConstraint(defaulttype::BaseVector *vect, unsigned int offset)
+void PartialFixedConstraint<DataTypes>::applyConstraint(const sofa::core::MechanicalParams* mparams, 
+                                        sofa::defaulttype::BaseVector* vector, const sofa::core::behavior::MultiMatrixAccessor* matrix)
 {
-    //sout << "applyConstraint in Vector with offset = " << offset << sendl;
-    //cerr<<"PartialFixedConstraint<DataTypes>::applyConstraint(defaulttype::BaseVector *vect, unsigned int offset) is called "<<endl;
+    int o = matrix->getGlobalOffset(this->mstate.get(mparams));
+    if (o < 0)
+    {
+        return;
+    }
 
-    //TODO take f_fixAll into account
-
+    unsigned int offset = (unsigned int)o;
 
     const unsigned int N = Deriv::size();
 
@@ -284,44 +298,7 @@ void PartialFixedConstraint<DataTypes>::applyConstraint(defaulttype::BaseVector 
         {
             if (blockedDirection[c])
             {
-                vect->clear(offset + N * (*it) + c);
-            }
-        }
-    }
-}
-
-template <class DataTypes>
-void PartialFixedConstraint<DataTypes>::applyConstraint(const core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix)
-{
-    core::behavior::MultiMatrixAccessor::MatrixRef r = matrix->getMatrix(this->mstate.get(mparams));
-    if(r)
-    {
-        //sout << "applyConstraint in Matrix with offset = " << offset << sendl;
-        //cerr<<"FixedConstraint<DataTypes>::applyConstraint(defaulttype::BaseMatrix *mat, unsigned int offset) is called "<<endl;
-        const unsigned int N = Deriv::size();
-        const VecBool& blockedDirection = fixedDirections.getValue();
-        const SetIndexArray & indices = f_indices.getValue();
-
-        //TODO take f_fixAll into account
-
-
-        for (SetIndexArray::const_iterator it = indices.begin(); it != indices.end(); ++it)
-        {
-            // Reset Fixed Row and Col
-            for (unsigned int c=0; c<N; ++c)
-            {
-                if (blockedDirection[c])
-                {
-                    r.matrix->clearRowCol(r.offset + N * (*it) + c);
-                }
-            }
-            // Set Fixed Vertex
-            for (unsigned int c=0; c<N; ++c)
-            {
-                if (blockedDirection[c])
-                {
-                    r.matrix->set(r.offset + N * (*it) + c, r.offset + N * (*it) + c, 1.0);
-                }
+                vector->clear(offset + N * (*it) + c);
             }
         }
     }

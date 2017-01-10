@@ -62,17 +62,9 @@ public:
     virtual void initForce(int /*line*/, double* /*force*/) {}
 
     /// Resolution of the constraint for one Gauss-Seidel iteration
-    virtual void resolution(int line, double** w, double* d, double* force, double * dFree)
-    {
-        SOFA_UNUSED(line);
-        SOFA_UNUSED(w);
-        SOFA_UNUSED(d);
-        SOFA_UNUSED(force);
-        SOFA_UNUSED(dFree);
-        std::cerr << "ERROR(" << "ConstraintResolution" << ")::resolution(int , double** , double* , double* , double * ) not implemented." << std::endl;
-    }
+    virtual void resolution(int line, double** w, double* d, double* force, double * dFree) = 0;
 
-    /// Called after Gauss-Seidel last iteration, in order to store last computed forces for the inital guess
+    /// Called after Gauss-Seidel last iteration, in order to store last computed forces for the initial guess
     virtual void store(int /*line*/, double* /*force*/, bool /*convergence*/) {}
 
     /// Number of dof used by this particular constraint. To be modified in the object's constructor.
@@ -160,20 +152,7 @@ public:
 	/// Add the corresponding ConstraintResolution using the offset parameter
 	/// \param cParams defines the state vectors to use for positions and velocities. Also defines the order of the constraint (POS, VEL, ACC) and resolution parameters (smoothness, ...)
 	/// \param resTab is the result vector that contains the contraint resolution algorithms
-    virtual void getConstraintResolution(const ConstraintParams* cParams, std::vector<ConstraintResolution*> &resTab, unsigned int &offset)
-	{
-
-        getConstraintResolution(resTab, offset);
-		SOFA_UNUSED(cParams);
-
-    }
-
-    virtual void getConstraintResolution(std::vector<ConstraintResolution*> &resTab, unsigned int &offset)
-    {
-        SOFA_UNUSED(resTab);
-        SOFA_UNUSED(offset);
-    }
-
+    virtual void getConstraintResolution(const ConstraintParams* cParams, std::vector<ConstraintResolution*> &resTab, unsigned int &offset) = 0;
 };
 
 } // namespace behavior
