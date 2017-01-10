@@ -29,9 +29,11 @@
 #include <sofa/core/behavior/LinearSolver.h>
 #include <SofaBaseLinearSolver/MatrixLinearSolver.h>
 
+#ifdef SOFA_HAVE_METIS
 extern "C" {
 #include <metis.h>
 }
+#endif
 
 namespace sofa
 {
@@ -56,6 +58,77 @@ public :
     bool new_factorization_needed;
 };
 
+
+#ifdef SOFA_HAVE_METIS
+inline void CSPARSE_ordering(int n,int * M_colptr,int * M_rowind,int * perm,int * invperm, helper::vector<int> tran_countvec, helper::vector<int> xadj,helper::vector<int> adj,helper::vector<int> t_xadj,helper::vector<int> t_adj)
+{
+    //Compute transpose in tran_colptr, tran_rowind, tran_values, tran_D
+    tran_countvec.clear();
+    tran_countvec.resize(n);
+
+    //First we count the number of value on each row.
+    for (int j=0;j<n;j++) {
+      for (int i=M_colptr[j];i<M_colptr[j+1];i++) {
+          int col = M_rowind[i];
+          if (col>j) tran_countvec[col]++;
+      }
+    }
+
+    //Now we make a scan to build tran_colptr
+    t_xadj.resize(n+1);
+    t_xadj[0] = 0;
+    for (int j=0;j<n;j++) t_xadj[j+1] = t_xadj[j] + tran_countvec[j];
+
+    //we clear tran_countvec becaus we use it now to stro hown many value are written on each line
+    tran_countvec.clear();
+    tran_countvec.resize(n);
+
+    t_adj.resize(t_xadj[n]);
+    for (int j=0;j<n;j++) {
+      for (int i=M_colptr[j];i<M_colptr[j+1];i++) {
+        int line = M_rowind[i];
+        if (line>j) {
+            t_adj[t_xadj[line] + tran_countvec[line]] = j;
+            tran_countvec[line]++;
+        }
+      }
+    }
+
+    adj.clear();
+    xadj.resize(n+1);
+    xadj[0] = 0;
+    for (int j=0; j<n; j++)
+    {
+        //copy the lower part
+        for (int ip = t_xadj[j]; ip < t_xadj[j+1]; ip++) {
+            adj.push_back(t_adj[ip]);
+        }
+
+        //copy only the upper part
+        for (int ip = M_colptr[j]; ip < M_colptr[j+1]; ip++) {
+            int col = M_rowind[ip];
+            if (col > j) adj.push_back(col);
+        }
+
+        xadj[j+1] = adj.size();
+    }
+
+    //int numflag = 0, options = 0;
+    // The new API of metis requires pointers on numflag and "options" which are "structure" to parametrize the factorization
+    // We give NULL and NULL to use the default option (see doc of metis for details) !
+    // If you have the error "SparseLDLSolver failure to factorize, D(k,k) is zero" that probably means that you use the previsou version of metis.
+    // In this case you have to download and install the last version from : www.cs.umn.edu/~metis‎
+    METIS_NodeND(&n, &xadj[0],&adj[0], NULL, NULL, perm,invperm);
+}
+#endif
+inline void CSPARSE_no_ordering(int n,int * /*M_colptr*/,int * /*M_rowind*/,int * perm,int * invperm, int * /*xadj*/, int * /*adj*/)
+{
+    for (int i=0; i<n; i++)
+    {
+        perm[i] = i;
+        invperm[i] = i;
+    }
+}
 inline void CSPARSE_symbolic (int n,int * M_colptr,int * M_rowind,int * colptr,int * perm,int * invperm,int * Parent, int * Flag, int * Lnz)
 {
     for (int k = 0 ; k < n ; k++)
@@ -173,7 +246,20 @@ protected :
 
     SparseLDLSolverImpl()
     : Inherit(),
-      d_orderingMode(initData(&d_orderingMode,1,"orderingMode", "Permutation computation algorithm: 0 = disabled, 1 = METIS (available)"))
+      d_orderingMode(initData(&d_orderingMode,
+#ifdef SOFA_HAVE_METIS
+                          1,
+#else
+                          0,
+#endif
+                          "orderingMode",
+                          "Permutation computation algorithm: 0 = disabled, 1 = METIS "
+#ifdef SOFA_HAVE_METIS
+                          "(available)"
+#else
+                          "(not available)"
+#endif
+                 ))
     {}
 
     template<class VecInt,class VecReal>
@@ -211,63 +297,23 @@ protected :
     }
 
     void LDL_ordering(int n,int * M_colptr,int * M_rowind,int * perm,int * invperm) {
-        //Compute transpose in tran_colptr, tran_rowind, tran_values, tran_D
-        tran_countvec.clear();
-        tran_countvec.resize(n);
-
-        //First we count the number of value on each row.
-        for (int j=0;j<n;j++) {
-          for (int i=M_colptr[j];i<M_colptr[j+1];i++) {
-              int col = M_rowind[i];
-              if (col>j) tran_countvec[col]++;
-          }
+        const int orderingMode = this->d_orderingMode.getValue();
+        switch (orderingMode) {
+        case 0 :
+            CSPARSE_no_ordering(n,M_colptr,M_rowind,perm,invperm,&xadj[0],&adj[0]);
+            break;
+#ifdef SOFA_HAVE_METIS
+        case 1 :
+            CSPARSE_ordering(n,M_colptr,M_rowind,perm,invperm,tran_countvec,xadj,adj,t_xadj,t_adj);
+            break;
+#endif
+        default:
+            serr << "orderingMode " << orderingMode << " NOT SUPPORTED" << sendl;
+#ifdef SOFA_HAVE_METIS
+            if (orderingMode == 1) serr << "METIS is required at compilation" << sendl;
+#endif
+            CSPARSE_no_ordering(n,M_colptr,M_rowind,perm,invperm,&xadj[0],&adj[0]);
         }
-
-        //Now we make a scan to build tran_colptr
-        t_xadj.resize(n+1);
-        t_xadj[0] = 0;
-        for (int j=0;j<n;j++) t_xadj[j+1] = t_xadj[j] + tran_countvec[j];
-
-        //we clear tran_countvec becaus we use it now to stro hown many value are written on each line
-        tran_countvec.clear();
-        tran_countvec.resize(n);
-
-        t_adj.resize(t_xadj[n]);
-        for (int j=0;j<n;j++) {
-          for (int i=M_colptr[j];i<M_colptr[j+1];i++) {
-            int line = M_rowind[i];
-            if (line>j) {
-                t_adj[t_xadj[line] + tran_countvec[line]] = j;
-                tran_countvec[line]++;
-            }
-          }
-        }
-
-        adj.clear();
-        xadj.resize(n+1);
-        xadj[0] = 0;
-        for (int j=0; j<n; j++)
-        {
-            //copy the lower part
-            for (int ip = t_xadj[j]; ip < t_xadj[j+1]; ip++) {
-                adj.push_back(t_adj[ip]);
-            }
-
-            //copy only the upper part
-            for (int ip = M_colptr[j]; ip < M_colptr[j+1]; ip++) {
-                int col = M_rowind[ip];
-                if (col > j) adj.push_back(col);
-            }
-
-            xadj[j+1] = adj.size();
-        }
-
-        //int numflag = 0, options = 0;
-        // The new API of metis requires pointers on numflag and "options" which are "structure" to parametrize the factorization
-        // We give NULL and NULL to use the default option (see doc of metis for details) !
-        // If you have the error "SparseLDLSolver failure to factorize, D(k,k) is zero" that probably means that you use the previsou version of metis.
-        // In this case you have to download and install the last version from : www.cs.umn.edu/~metis‎
-        METIS_NodeND(&n, &xadj[0],&adj[0], NULL, NULL, perm,invperm);
     }
 
     void LDL_symbolic (int n,int * M_colptr,int * M_rowind,int * colptr,int * perm,int * invperm,int * Parent) {

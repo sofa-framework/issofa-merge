@@ -114,6 +114,7 @@ void EulerImplicitSolver::solve(const core::ExecParams* params, SReal dt, sofa::
     const SReal& h = dt;
     const bool verbose  = f_verbose.getValue();
     const bool firstOrder = f_firstOrder.getValue();
+    const bool projectForce = f_projectForce.getValue();
 
     // the only difference for the trapezoidal rule is the factor tr = 0.5 for some usages of h
     const bool optTrapezoidal = d_trapezoidalScheme.getValue();
@@ -131,7 +132,7 @@ void EulerImplicitSolver::solve(const core::ExecParams* params, SReal dt, sofa::
     // compute the net forces at the beginning of the time step
     mop.computeForce(f);
     if( verbose )
-        serr<<"EulerImplicitSolver, initial f = "<< f <<sendl;
+        serr<<"EulerImplicitSolver, f = "<< f <<sendl;
 
     sofa::helper::AdvancedTimer::stepNext ("ComputeForce", "ComputeRHTerm");
     if( firstOrder )
@@ -144,14 +145,18 @@ void EulerImplicitSolver::solve(const core::ExecParams* params, SReal dt, sofa::
 
         // force in the current configuration
         b.eq(f,1.0/tr);                                                                         // b = f0
-        if( verbose )
-            serr<<"EulerImplicitSolver, f = "<< f <<sendl;
 
         // add the change of force due to stiffness + Rayleigh damping
         mop.addMBKv(b, -f_rayleighMass.getValue(), 1, h+f_rayleighStiffness.getValue()); // b =  f0 + ( rm M + B + (h+rs) K ) v
 
         // integration over a time step
         b.teq(h*tr);                                                                        // b = h(f0 + ( rm M + B + (h+rs) K ) v )
+    }
+    if ( projectForce )
+    {
+        mop.projectResponse(f);          // f is projected to the constrained space
+        if( verbose )
+            serr<<"EulerImplicitSolver, projected f = "<< f <<sendl;
     }
 
     if( verbose )
