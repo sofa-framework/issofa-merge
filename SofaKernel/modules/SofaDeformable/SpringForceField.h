@@ -121,6 +121,8 @@ public:
     Data<float> showArrowSize;
     Data<int> drawMode; //Draw Mode: 0=Line - 1=Cylinder - 2=Arrow
     Data<sofa::helper::vector<Spring> > springs;
+
+protected:
     core::objectmodel::DataFileName fileSprings;
 
 protected:
