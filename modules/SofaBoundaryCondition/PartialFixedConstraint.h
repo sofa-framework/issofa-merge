@@ -109,7 +109,6 @@ public:
 
     void applyConstraint(const sofa::core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix);
     void applyConstraint(const sofa::core::MechanicalParams* mparams, sofa::defaulttype::BaseVector* vector, const sofa::core::behavior::MultiMatrixAccessor* matrix);
-    virtual void applyConstraint(const core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix);
 
 
     virtual void projectMatrix( sofa::defaulttype::BaseMatrix* /*M*/, unsigned /*offset*/ );
