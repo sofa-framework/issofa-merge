@@ -43,7 +43,7 @@ namespace collision
 
 // uncomment if you want to use the freePoint information
 // #define DETECTIONOUTPUT_FREEMOTION
-#define DETECTIONOUTPUT_BARYCENTRICINFO
+//#define DETECTIONOUTPUT_BARYCENTRICINFO
 
 /**
  *  \brief Generic description of a contact point, used for most collision models except special cases such as GPU-based collisions.
