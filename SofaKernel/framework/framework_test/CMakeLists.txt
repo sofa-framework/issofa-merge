@@ -8,6 +8,7 @@ set(SOURCE_FILES
     core/objectmodel/Data_test.cpp
     core/objectmodel/DataTypeInfoTest.cpp
     core/DataEngine_test.cpp
+    defaulttype/MapMapSparseMatrix_test.cpp
     defaulttype/MatTypes_test.cpp
     defaulttype/VecTypes_test.cpp
     defaulttype/RigidMass_test.cpp
