@@ -260,16 +260,9 @@ public:
     template<class T>
     static Quater createFromRotationVector(T a0, T a1, T a2 )
     {
-        Real phi = (Real)sqrt((Real)(a0*a0+a1*a1+a2*a2));
-        if( phi < 1.0e-5 )
-            return Quater(0,0,0,1);
-        else
-        {
-            Real nor = 1/phi;
-            Real s = (Real)sin(phi/2.0);
-            return Quater( a0*s*nor, a1*s*nor,a2*s*nor, (Real)cos(phi/2.0) );
-        }
+        return createFromExp(T(a0,a1,a2));
     }
+
     /// Create using rotation vector (axis*angle) given in parent coordinates
     template<class V>
     static Quater set(const V& a) { return createFromRotationVector(a); }
