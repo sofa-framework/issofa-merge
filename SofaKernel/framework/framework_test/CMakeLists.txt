@@ -6,8 +6,8 @@ set(SOURCE_FILES
     core/loader/MeshLoader_test.cpp
     core/objectmodel/AspectPool_test.cpp
     core/objectmodel/Data_test.cpp
-    core/objectmodel/DataTypeInfoTest.cpp
     core/DataEngine_test.cpp
+    defaulttype/DataTypeInfo_test.cpp
     defaulttype/MapMapSparseMatrix_test.cpp
     defaulttype/MatTypes_test.cpp
     defaulttype/VecTypes_test.cpp
