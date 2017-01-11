@@ -50,7 +50,7 @@ template<class R>
 SolidTypes<R>::SpatialVector::SpatialVector(const SolidTypes<R>::Transform &DTrans)
 {
     freeVec = DTrans.getOrigin();
-    lineVec = DTrans.getOrientation().getLog(); // Consider to use quatToRotationVector instead of toEulerVector to have the rotation vector
+    lineVec = DTrans.getOrientation().getLog(); // Consider to use getLog instead of toEulerVector to have the rotation vector
 }
 */
 
@@ -218,8 +218,8 @@ template<class R>
 typename SolidTypes<R>::SpatialVector SolidTypes<R>::Transform::DTrans()
 {
 
-    return SpatialVector(orientation_.quatToRotationVector(), this->getOrigin());
-    // Use of quatToRotationVector instead of toEulerVector:
+    return SpatialVector(orientation_.getLog(), this->getOrigin());
+    // Use of getLog instead of toEulerVector:
     // this is done to keep the old behavior (before the
     // correction of the toEulerVector  function). If the
     // purpose was to obtain the Eulerian vector and not the
@@ -325,7 +325,7 @@ typename SolidTypes<R>::Transform& SolidTypes<R>::Transform::operator *= (const 
 template<class R>
 typename SolidTypes<R>::SpatialVector  SolidTypes<R>::Transform::CreateSpatialVector()
 {
-    return SpatialVector(this->getOrientation().quatToRotationVector(),  this->getOrigin() );
+    return SpatialVector(this->getOrientation().getLog(),  this->getOrigin() );
 }
 
 template<class R>

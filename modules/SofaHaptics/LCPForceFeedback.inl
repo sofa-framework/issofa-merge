@@ -122,7 +122,7 @@ bool derivRigid3Vectors(const typename DataTypes::VecCoord& x0, const typename D
         {
             // rotations are taken into account to compute the violations
             sofa::defaulttype::Quat q= x0[i].getOrientation();
-            getVOrientation(d[i]) = -x0[i].rotate( q.quatToRotationVector() );  // Use of quatToRotationVector instead of toEulerVector:
+            getVOrientation(d[i]) = -x0[i].rotate( q.getLog() );                // Use of getLog instead of toEulerVector:
                                                                                 // this is done to keep the old behavior (before the
                                                                                 // correction of the toEulerVector  function). If the
                                                                                 // purpose was to obtain the Eulerian vector and not the
