@@ -33,7 +33,7 @@
 #include <SofaBaseLinearSolver/FullMatrix.h>
 #include <sofa/helper/map.h>
 #include <math.h>
-#include <csparse/csparse.h>
+#include <csparse.h>
 
 namespace sofa
 {
