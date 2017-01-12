@@ -177,11 +177,13 @@ public:
 
     Quater inverse() const;
 
-
-    defaulttype::Vec<3,Real> quatToRotationVector() const;
-
+    /// @deprecated
     defaulttype::Vec<3,Real> toEulerVector() const;
 
+    ///< Returns the logarithm of the input quaternion
+    defaulttype::Vec<3,Real> getLog() const;
+
+    defaulttype::Vec<3,Real> quatToRotationVector() const;
 
     /*! Returns the slerp interpolation of Quaternions \p a and \p b, at time \p t.
 
@@ -212,19 +214,26 @@ public:
 
     static Quater createQuaterFromFrame(const defaulttype::Vec<3, Real> &lox, const defaulttype::Vec<3, Real> &loy,const defaulttype::Vec<3, Real> &loz);
 
-    /// Create using rotation vector (axis*angle) given in parent coordinates
+    /// Returns the quaternion exponent of the vector
     template<class V>
-    static Quater createFromRotationVector(const V& a)
+    static Quater createFromExp(const V& a)
     {
         Real phi = (Real)sqrt(a*a);
         if( phi < 1.0e-5 )
-            return Quater(0,0,0,1);
+            return Quater(a[0],a[1],a[2],1);
         else
         {
             Real nor = 1/phi;
             Real s = (Real)sin(phi/2);
             return Quater( a[0]*s*nor, a[1]*s*nor,a[2]*s*nor, (Real)cos(phi/2) );
         }
+    }
+
+    /// Create using rotation vector (axis*angle) given in parent coordinates
+    template<class V>
+    static Quater createFromRotationVector(const V& a)
+    {
+        return createFromExp(a);
     }
 
     /// Create a quaternion from Euler angles
@@ -251,16 +260,9 @@ public:
     template<class T>
     static Quater createFromRotationVector(T a0, T a1, T a2 )
     {
-        Real phi = (Real)sqrt((Real)(a0*a0+a1*a1+a2*a2));
-        if( phi < 1.0e-5 )
-            return Quater(0,0,0,1);
-        else
-        {
-            Real nor = 1/phi;
-            Real s = (Real)sin(phi/2.0);
-            return Quater( a0*s*nor, a1*s*nor,a2*s*nor, (Real)cos(phi/2.0) );
-        }
+        return createFromExp(T(a0,a1,a2));
     }
+
     /// Create using rotation vector (axis*angle) given in parent coordinates
     template<class V>
     static Quater set(const V& a) { return createFromRotationVector(a); }
@@ -288,7 +290,7 @@ public:
     /// Return the eulerian vector resulting of the movement between 2 quaternions
     defaulttype::Vec<3,Real> angularDisplacement( Quater a, const Quater& b)
     {
-        return quatDiff(a,b).quatToRotationVector();    // Use of quatToRotationVector instead of toEulerVector:
+        return quatDiff(a,b).getLog();                  // Use of getLog instead of toEulerVector:
                                                         // this is done to keep the old behavior (before the
                                                         // correction of the toEulerVector function).
     }

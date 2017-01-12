@@ -293,8 +293,8 @@ struct setRotWrapper<DataTypes, N, true>
 
 template<class DataTypes>
 struct setRotWrapper<DataTypes, 2, false>
-{ static void setRot(typename DataTypes::Coord& coord, const sofa::helper::Quater<SReal>& rot)	{ coord.getOrientation() = rot.quatToRotationVector().z(); } };
-// Use of quatToRotationVector instead of toEulerVector:
+{ static void setRot(typename DataTypes::Coord& coord, const sofa::helper::Quater<SReal>& rot)	{ coord.getOrientation() = rot.getLog().z(); } };
+// Use of getLog instead of toEulerVector:
 // this is done to keep the old behavior (before the
 // correction of the toEulerVector  function). If the
 // purpose was to obtain the Eulerian vector and not the

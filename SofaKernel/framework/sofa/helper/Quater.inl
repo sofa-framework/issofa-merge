@@ -485,8 +485,8 @@ void Quater<Real>::quatToAxis(defaulttype::Vec<3,Real> & axis, Real &angle) cons
 
     Real sin_half_theta; // note that sin(theta/2) == norm of the imaginary part for unit quaternion
 
-    // to avoid numerical instabilities of acos for theta < 5°
-    if(q[3]>0.999) // theta < 5° -> q[3] = cos(theta/2) > 0.999
+    // to avoid numerical instabilities of acos for theta < 5ï¿½
+    if(q[3]>0.999) // theta < 5ï¿½ -> q[3] = cos(theta/2) > 0.999
     {
         sin_half_theta = sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2]);
         angle = (Real)(2.0 * asin(sin_half_theta));
@@ -505,60 +505,59 @@ void Quater<Real>::quatToAxis(defaulttype::Vec<3,Real> & axis, Real &angle) cons
         axis = defaulttype::Vec<3,Real>(q[0], q[1], q[2])/sin_half_theta;
 }
 
-/// Given a quaternion, compute rotation vector (axis times angle)
+/// Returns the log of the quaternion
+template<class Real>
+defaulttype::Vec<3,Real> Quater<Real>::getLog() const
+{
+    Quater< Real > q = *this;
+    q.normalize();
+
+    defaulttype::Vec<3,Real> v(q[0], q[1], q[2]);
+
+    double norm = sqrt( (double) (v.x() * v.x() + v.y() * v.y() + v.z() * v.z()) );
+ 
+    if (norm < 0.000001)
+        return v;
+
+    if (q[3] > 0.999)
+    {
+        v *= 2.0;
+    }
+    else if (q[3] < -0.999)
+    {
+        v *= -2.0;
+    }
+    else
+    {
+        double angle = q[3] > 0 ? acos(q[3]) * 2 : acos(-q[3]) * -2;
+        v *= angle / norm;
+    }
+
+    return v;
+}
+
+/// @Deprecated. Use getLog method instead.
 template<class Real>
 defaulttype::Vec<3,Real> Quater<Real>::quatToRotationVector() const
 {
-
-    Quater<Real> q = *this;
-    q.normalize();
-
-    Real angle;
-
-    if(q[3]<0)
-        q*=-1; // we only work with theta in [0, PI] (i.e. angle in [0, 2*PI])
-
-    Real sin_half_theta; // note that sin(theta/2) == norm of the imaginary part for unit quaternion
-
-    // to avoid numerical instabilities of acos for theta < 5°
-    if(q[3]>0.999) // theta < 5° -> q[3] = cos(theta/2) > 0.999
-    {
-        sin_half_theta = sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2]);
-        angle = (Real)(2.0 * asin(sin_half_theta));
-    }
-    else
-    {
-        Real half_theta = acos(q[3]);
-        sin_half_theta = sin(half_theta);
-        angle = 2*half_theta;
-    }
-
-    assert(sin_half_theta>=0);
-    defaulttype::Vec<3,Real> rotVector;
-    if (sin_half_theta < std::numeric_limits<Real>::epsilon())
-        rotVector = defaulttype::Vec<3,Real>(0.0, 0.0, 0.0);
-    else
-        rotVector = defaulttype::Vec<3,Real>(q[0], q[1], q[2])/sin_half_theta*angle;
-
-    return rotVector;
+    return getLog();
 }
-
 
 template<class Real>
 defaulttype::Vec<3,Real> Quater<Real>::toEulerVector() const
 {
-///    Compute the Euler angles:
-///    Roll: rotation about the X-axis
-///    Pitch: rotation about the Y-axis
-///    Yaw: rotation about the Z-axis
+    ///    Compute the Euler angles:
+    ///    Roll: rotation about the X-axis
+    ///    Pitch: rotation about the Y-axis
+    ///    Yaw: rotation about the Z-axis
 
-    Quater<Real> q = *this;
-        q.normalize();
-        defaulttype::Vec<3,Real> vEuler;
-        vEuler[0] = atan2(2*(q[3]*q[0] + q[1]*q[2]) , (1-2*(q[0]*q[0] + q[1]*q[1])));   //roll
-        vEuler[1] = asin(2*(q[3]*q[1] - q[2]*q[0]));                                    //pitch
-        vEuler[2] = atan2(2*(q[3]*q[2] + q[0]*q[1]) , (1-2*(q[1]*q[1] + q[2]*q[2])));   //yaw
-        return vEuler;
+        Quater<Real> q = *this;
+            q.normalize();
+            defaulttype::Vec<3,Real> vEuler;
+            vEuler[0] = atan2(2*(q[3]*q[0] + q[1]*q[2]) , (1-2*(q[0]*q[0] + q[1]*q[1])));   //roll
+            vEuler[1] = asin(2*(q[3]*q[1] - q[2]*q[0]));                                    //pitch
+            vEuler[2] = atan2(2*(q[3]*q[2] + q[0]*q[1]) , (1-2*(q[1]*q[1] + q[2]*q[2])));   //yaw
+    return vEuler;
 }
 
 /*! Returns the slerp interpolation of Quaternions \p a and \p b, at time \p t.
