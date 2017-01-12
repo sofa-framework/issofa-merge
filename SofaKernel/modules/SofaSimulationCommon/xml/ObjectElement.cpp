@@ -83,7 +83,7 @@ bool ObjectElement::initNode()
         obj = Factory::CreateObject(this->getType(), this);
     if (obj == NULL)
     {
-        getParent()->logError(std::string("Object type \"" + getType() + "\" creation Failed" ));
+        getParent()->logError(std::string("Object " + getName() + "(" + getType() + ") creation Failed" ));
         return false;
     }
     setObject(obj);
