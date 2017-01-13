@@ -26,6 +26,7 @@
 
 #include <SofaMeshCollision/RigidContactMapper.inl>
 #include <SofaMeshCollision/BarycentricContactMapper.inl>
+#include <sofa/core/collision/DetectionOutput.h>
 
 namespace sofa
 {
