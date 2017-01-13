@@ -27,6 +27,7 @@
 #include <SofaComponentGeneral/initComponentGeneral.h>
 #include <SofaComponentAdvanced/initComponentAdvanced.h>
 #include <SofaComponentMisc/initComponentMisc.h>
+#include <SofaSimulationTree/init.h>
 
 #include <math.h>
 #include <iostream>
@@ -178,7 +179,7 @@ useGUI(useGUI_), GUIFramerate(GUIFramerate_)
         sofa::component::initComponentAdvanced();
         sofa::component::initComponentMisc();
 
-        sofa::simulation::xml::initXml();
+        sofa::simulation::tree::init();
 
         if ( !useGUI ) {
           // FakeGUI to be able to receive messages
