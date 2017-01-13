@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12)
 project(SofaGeneralDeformable_test)
 
 set(SOURCE_FILES
-    FastTriangularBendingSpring_test
+    FastTriangularBendingSprings_test.cpp
     )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
