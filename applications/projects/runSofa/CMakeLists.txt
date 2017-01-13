@@ -1,4 +1,9 @@
 cmake_minimum_required(VERSION 2.8.12)
+
+find_package(SofaGeneral REQUIRED)
+find_package(SofaMisc    REQUIRED)
+find_package(SofaGui     REQUIRED)
+
 project(runSofa)
 
 option(RUNSOFA_INSTALL_AS_BUNDLE "Create a bundle containing all the installation files (Only Mac OS X for now)" OFF)

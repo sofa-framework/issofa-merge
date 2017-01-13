@@ -2,10 +2,15 @@
 
 @PACKAGE_INIT@
 
-check_required_components(SofaPhysicsAPI)
-
 find_package(SofaGeneral REQUIRED)
+find_package(SofaGui      REQUIRED)
+find_package(SofaGeneral  REQUIRED)
+find_package(SofaAdvanced REQUIRED)
+find_package(SofaMisc     REQUIRED)
+find_package(VolumetricRendering REQUIRED)
 
 if(NOT TARGET SofaPhysicsAPI)
 	include("${CMAKE_CURRENT_LIST_DIR}/SofaPhysicsAPITargets.cmake")
 endif()
+
+check_required_components(SofaPhysicsAPI)

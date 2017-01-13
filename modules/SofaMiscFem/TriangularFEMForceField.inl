@@ -33,7 +33,6 @@
 #include "TriangularFEMForceField.h"
 
 #include <sofa/core/visual/VisualParams.h>
-#include <SofaOpenglVisual/OglColorMap.h>
 #include <sofa/helper/gl/template.h>
 #include <sofa/helper/system/gl.h>
 
@@ -1826,22 +1825,22 @@ void TriangularFEMForceField<DataTypes>::draw(const core::visual::VisualParams* 
                 maxStress = averageStress;
         }
 
-        helper::ColorMap::evaluator<double> evalColor = helper::ColorMap::getDefault()->getEvaluator(minStress, maxStress);
-        glBegin(GL_TRIANGLES);
-        for(unsigned int i=0; i<nbTriangles; ++i)
-        {
-            Index a = _topology->getTriangle(i)[0];
-            Index b = _topology->getTriangle(i)[1];
-            Index c = _topology->getTriangle(i)[2];
+        //helper::ColorMap::evaluator<double> evalColor = helper::ColorMap::getDefault()->getEvaluator(minStress, maxStress);
+        //glBegin(GL_TRIANGLES);
+        //for(unsigned int i=0; i<nbTriangles; ++i)
+        //{
+        //    Index a = _topology->getTriangle(i)[0];
+        //    Index b = _topology->getTriangle(i)[1];
+        //    Index c = _topology->getTriangle(i)[2];
 
-            glColor4fv(evalColor(vertexInf[a].stress).ptr());
-            helper::gl::glVertexT(x[a]);
-            glColor4fv(evalColor(vertexInf[b].stress).ptr());
-            helper::gl::glVertexT(x[b]);
-            glColor4fv(evalColor(vertexInf[c].stress).ptr());
-            helper::gl::glVertexT(x[c]);
-        }
-        glEnd();
+        //    glColor4fv(evalColor(vertexInf[a].stress).ptr());
+        //    helper::gl::glVertexT(x[a]);
+        //    glColor4fv(evalColor(vertexInf[b].stress).ptr());
+        //    helper::gl::glVertexT(x[b]);
+        //    glColor4fv(evalColor(vertexInf[c].stress).ptr());
+        //    helper::gl::glVertexT(x[c]);
+        //}
+        //glEnd();
 
         /*
         if (nbPoints > 0)

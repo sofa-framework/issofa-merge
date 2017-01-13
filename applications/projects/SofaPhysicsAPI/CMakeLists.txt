@@ -25,10 +25,12 @@ set(SOURCE_FILES
 
 find_package(SofaGui REQUIRED)
 find_package(SofaGeneral REQUIRED)
+find_package(SofaAdvanced REQUIRED)
+find_package(SofaMisc     REQUIRED)
 find_package(VolumetricRendering REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES})
-target_link_libraries(${PROJECT_NAME} PUBLIC SofaGuiMain SofaComponentGeneral VolumetricRendering)
+target_link_libraries(${PROJECT_NAME} PUBLIC SofaGuiMain SofaComponentGeneral SofaComponentAdvanced SofaComponentMisc VolumetricRendering)
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>")
 target_include_directories(${PROJECT_NAME} PUBLIC "$<INSTALL_INTERFACE:include>")
 set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_d")
