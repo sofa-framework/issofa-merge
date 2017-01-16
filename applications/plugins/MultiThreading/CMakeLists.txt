@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.1)
 project(MultiThreading)
 
 ##
@@ -34,6 +34,7 @@ set(SOURCE_FILES
     )
 
 find_package(SofaGeneral REQUIRED)
+find_package(Boost QUIET COMPONENTS system thread date_time chrono)
 
 set(MULTITHREADING_DEPENDENCY_INCLUDE_DIR ${SofaGeneral_INCLUDE_DIRS})
 set(MULTITHREADING_DEPENDENCIES_LINK SofaHelper)
@@ -89,3 +90,8 @@ install(TARGETS ${PROJECT_NAME}
 # MultiThreadingTargets.cmake (installed)
 install(EXPORT MultiThreadingTargets
         DESTINATION ${MULTITHREADING_INSTALL_CMAKE_DIR} )
+# TODO replace boost::thread by std::thread in this plugin
+if(Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+  target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
+endif()

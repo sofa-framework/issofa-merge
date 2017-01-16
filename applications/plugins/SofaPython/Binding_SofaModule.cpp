@@ -1,23 +1,20 @@
 /******************************************************************************
 *       SOFA, Simulation Open-Framework Architecture, development version     *
-*                (c) 2006-2016 INRIA, USTL, UJF, CNRS, MGH                    *
+*                (c) 2006-2017 INRIA, USTL, UJF, CNRS, MGH                    *
 *                                                                             *
-* This library is free software; you can redistribute it and/or modify it     *
+* This program is free software; you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as published by    *
 * the Free Software Foundation; either version 2.1 of the License, or (at     *
 * your option) any later version.                                             *
 *                                                                             *
-* This library is distributed in the hope that it will be useful, but WITHOUT *
+* This program is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or       *
 * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License *
 * for more details.                                                           *
 *                                                                             *
 * You should have received a copy of the GNU Lesser General Public License    *
-* along with this library; if not, write to the Free Software Foundation,     *
-* Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.          *
+* along with this program. If not, see <http://www.gnu.org/licenses/>.        *
 *******************************************************************************
-*                               SOFA :: Plugins                               *
-*                                                                             *
 * Authors: The SOFA Team and external contributors (see Authors.txt)          *
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
@@ -40,7 +37,6 @@
 #include <sofa/simulation/Simulation.h>
 #include <sofa/simulation/SceneLoaderFactory.h>
 //#include <sofa/simulation/UpdateBoundingBoxVisitor.h>
-#include "ScriptEnvironment.h"
 #include <sofa/helper/logging/Messaging.h>
 
 #include "SceneLoaderPY.h"
@@ -316,39 +312,53 @@ extern "C" PyObject * Sofa_generateRigid(PyObject * /*self*/, PyObject * args)
 extern "C" PyObject * Sofa_exportGraph(PyObject * /*self*/, PyObject * args)
 {
     char* filename;
-    if (!PyArg_ParseTuple(args, "s",&filename))
+    PyObject* pyNode;
+    if (!PyArg_ParseTuple(args, "Os", &pyNode, &filename))
     {
         PyErr_BadArgument();
         Py_RETURN_NONE;
     }
 
-    getSimulation()->exportGraph( Simulation::GetRoot().get(), filename );
+    BaseNode* node=((PySPtr<Base>*)pyNode)->object->toBaseNode();
+    if (!node)
+    {
+        PyErr_BadArgument();
+        Py_RETURN_NONE;
+    }
+
+
+    getSimulation()->exportGraph( down_cast<Node>(node), filename );
 
     return Py_BuildValue("i",0);
 }
 
 
 
-extern "C" PyObject * Sofa_updateVisual(PyObject * /*self*/, PyObject * /*args*/)
+extern "C" PyObject * Sofa_updateVisual(PyObject * /*self*/, PyObject * args)
 {
+    PyObject* pyNode;
+    if (!PyArg_ParseTuple(args, "O", &pyNode))
+    {
+        PyErr_BadArgument();
+        Py_RETURN_NONE;
+    }
+
+    BaseNode* basenode=((PySPtr<Base>*)pyNode)->object->toBaseNode();
+    if (!basenode)
+    {
+        PyErr_BadArgument();
+        Py_RETURN_NONE;
+    }
+
+    Node* node = down_cast<Node>(basenode);
     Simulation* simulation = getSimulation();
-    Node*root=simulation->GetRoot().get();
 
     //    sofa::core::ExecParams* params = sofa::core::ExecParams::defaultInstance();
-//    root->execute<UpdateBoundingBoxVisitor>(params);
-//    simulation->updateVisualContext(root);
-    simulation->updateVisual(root);
+//    node->execute<UpdateBoundingBoxVisitor>(params);
+//    simulation->updateVisualContext(node);
+    simulation->updateVisual(node);
 
 
-    Py_RETURN_NONE;
-}
-
-// sometimes nodes created in Python are not initialized ASAP
-// e.g. when created in callbacks initGraph or bwdInitGraph
-// this function forces the initialization of every nodes created in python that are not yet initialized
-extern "C" PyObject * Sofa_forceInitNodeCreatedInPython(PyObject * /*self*/, PyObject * /*args*/)
-{
-    sofa::simulation::ScriptEnvironment::initScriptNodes();
     Py_RETURN_NONE;
 }
 
@@ -623,7 +633,6 @@ SP_MODULE_METHOD(Sofa,getViewerCamera)
 SP_MODULE_METHOD(Sofa,generateRigid)
 SP_MODULE_METHOD(Sofa,exportGraph)
 SP_MODULE_METHOD(Sofa,updateVisual)
-SP_MODULE_METHOD(Sofa,forceInitNodeCreatedInPython)
 SP_MODULE_METHOD(Sofa,msg_info)
 SP_MODULE_METHOD(Sofa,msg_deprecated)
 SP_MODULE_METHOD(Sofa,msg_warning)

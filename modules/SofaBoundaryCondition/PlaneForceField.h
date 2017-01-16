@@ -1,23 +1,20 @@
 /******************************************************************************
 *       SOFA, Simulation Open-Framework Architecture, development version     *
-*                (c) 2006-2016 INRIA, USTL, UJF, CNRS, MGH                    *
+*                (c) 2006-2017 INRIA, USTL, UJF, CNRS, MGH                    *
 *                                                                             *
-* This library is free software; you can redistribute it and/or modify it     *
+* This program is free software; you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as published by    *
 * the Free Software Foundation; either version 2.1 of the License, or (at     *
 * your option) any later version.                                             *
 *                                                                             *
-* This library is distributed in the hope that it will be useful, but WITHOUT *
+* This program is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or       *
 * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License *
 * for more details.                                                           *
 *                                                                             *
 * You should have received a copy of the GNU Lesser General Public License    *
-* along with this library; if not, write to the Free Software Foundation,     *
-* Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.          *
+* along with this program. If not, see <http://www.gnu.org/licenses/>.        *
 *******************************************************************************
-*                               SOFA :: Modules                               *
-*                                                                             *
 * Authors: The SOFA Team and external contributors (see Authors.txt)          *
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
@@ -41,18 +38,25 @@ namespace component
 namespace forcefield
 {
 
-/// This class can be overridden if needed for additionnal storage within template specializations.
+/// This class can be overridden if needed for additionnal storage within
+/// template specializations.
 template<class DataTypes>
 class PlaneForceFieldInternalData
 {
 public:
 };
 
+///
+/// @class PlaneForceField
+/// A plane is cutting the space in two half spaces. This component generate a force preventing the
+/// object to cross the plane. The plane is defined by its normal and by the amount of displacement
+/// along this normal.
 template<class DataTypes>
 class PlaneForceField : public core::behavior::ForceField<DataTypes>
 {
 public:
-    SOFA_CLASS(SOFA_TEMPLATE(PlaneForceField, DataTypes), SOFA_TEMPLATE(core::behavior::ForceField, DataTypes));
+    SOFA_CLASS(SOFA_TEMPLATE(PlaneForceField, DataTypes),
+               SOFA_TEMPLATE(core::behavior::ForceField, DataTypes));
     typedef core::behavior::ForceField<DataTypes> Inherit;
     typedef typename DataTypes::VecCoord   VecCoord;
     typedef typename DataTypes::VecDeriv   VecDeriv;
@@ -60,8 +64,8 @@ public:
     typedef typename DataTypes::Deriv      Deriv;
     typedef typename DataTypes::VecReal    VecReal;
     typedef typename DataTypes::Real       Real;
-	typedef typename DataTypes::CPos       CPos;
-	typedef typename DataTypes::DPos       DPos;
+    typedef typename DataTypes::CPos       CPos;
+    typedef typename DataTypes::DPos       DPos;
     typedef typename Inherit::DataVecCoord DataVecCoord;
     typedef typename Inherit::DataVecDeriv DataVecDeriv;
 
@@ -123,76 +127,65 @@ protected:
 
 
 
-    PlaneForceFieldInternalData<DataTypes> data;
+    PlaneForceFieldInternalData<DataTypes> m_data;
 
 public:
 
-    Data<DPos>                                        planeNormal;
-    Data<VecReal>                                     planeD;
-    Data<Real>                                        stiffness;
-    Data<Real>                                        damping;
-	Data<Real>                                        maxForce;
-    Data<sofa::helper::vector< unsigned > >           indices; //< BaseMeshTopology should provide a way to get the PointID from the array of points.
-    Data<defaulttype::Vec3f>                          color;
-    Data<bool>                                        bDraw;
-    Data<Real>                                        drawSize;
+    Data<DPos>                                        d_planeNormal;
+    Data<VecReal>                                     d_planeD;
+    Data<Real>                                        d_stiffness;
+    Data<Real>                                        d_damping;
+    Data<Real>                                        d_maxForce;
+    Data<sofa::helper::vector< unsigned > >           d_indices; //< BaseMeshTopology should provide a way to get the PointID from the array of points.
+    /// optional range of local DOF indices. Any computation involving indices outside of this
+    /// range are discarded (useful for parallelization using mesh partitionning)
+    Data< defaulttype::Vec<2,int> > d_localRange;
+
+    Data<bool>               d_drawIsEnabled;
+    Data<defaulttype::Vec3f> d_drawColor;
+    Data<Real>               d_drawSize;
     /// option bilateral : if true, the force field is applied on both side of the plane
     Data<bool>                                        bilateral;
-    sofa::Data< sofa::helper::vector<PlaneContact > > contacts;
+    
+    sofa::Data< sofa::helper::vector<PlaneContact > > m_contacts;
 
 protected:
-    PlaneForceField()
-        : planeNormal(initData(&planeNormal, "normal", "plane normal"))
-        , planeD(initData(&planeD, VecReal(1, Real(0)), "d", "plane d coef, either one value for all"))
-        , stiffness(initData(&stiffness, (Real)500, "stiffness", "force stiffness"))
-        , damping(initData(&damping, (Real)5, "damping", "force damping"))
-        , maxForce(initData(&maxForce, (Real)0, "maxForce", "if non-null, the max force that can be applied to the object"))
+    PlaneForceField() ;
+
         , indices(initData(&indices,"indices","If not empty the list of indices where this forcefield is applied"))
-		, color(initData(&color, defaulttype::Vec3f(0.0f,.5f,.2f), "color", "plane color"))
-        , bDraw(initData(&bDraw, false, "draw", "enable/disable drawing of plane"))
-        , drawSize(initData(&drawSize, (Real)10.0f, "drawSize", "plane display size if draw is enabled"))
-        , bilateral( initData(&bilateral, false, "bilateral", "if true the plane force field is applied on both sides"))
         , contacts( initData(&contacts, "contacts","The information related to the points in violation with the plane"))
-    {
-		Deriv n;
-		DataTypes::set(n, 0, 1, 0);
-        planeNormal.setValue(DataTypes::getDPos(n));
-    }
 
 public:
 
     void setPlane(const Deriv& normal, Real d);
-
     void setMState(  core::behavior::MechanicalState<DataTypes>* mstate ) 
     { 
         this->mstate = mstate; 
     }
 
-    void setStiffness(Real stiff)
-    {
-        stiffness.setValue( stiff );
-    }
+    void setStiffness(Real stiff) { d_stiffness.setValue( stiff ); }
+    Real getStiffness() const { return d_stiffness.getValue(); }
 
-    void setDamping(Real damp)
-    {
-        damping.setValue( damp );
-    }
+    void setDamping(Real damp){ d_damping.setValue( damp ); }
+    Real getDamping() const { return d_damping.getValue(); }
 
+    void setDrawColor(const defaulttype::Vec3f& newvalue){ d_drawColor.setValue(newvalue); }
+    const defaulttype::Vec3f& getDrawColor() const { return d_drawColor.getValue(); }
+
+    //TODO(dmarchal): do we really need a rotate operation into a plan class ?
     void rotate( Deriv axe, Real angle ); // around the origin (0,0,0)
 
-
-    virtual void addForce(const core::MechanicalParams* mparams, DataVecDeriv& f, const DataVecCoord& x, const DataVecDeriv& v);
-    virtual void addDForce(const core::MechanicalParams* mparams, DataVecDeriv& df, const DataVecDeriv& dx);
-
-    virtual SReal getPotentialEnergy(const core::MechanicalParams* /*mparams*/, const DataVecCoord&  /* x */) const
-    {
-        serr << "Get potentialEnergy not implemented" << sendl;
-        return 0.0;
-    }
-
+    /// Inherited from ForceField.
+    virtual void init();
+    virtual void addForce(const core::MechanicalParams* mparams,
+                          DataVecDeriv& f, const DataVecCoord& x, const DataVecDeriv& v);
+    virtual void addDForce(const core::MechanicalParams* mparams,
+                           DataVecDeriv& df, const DataVecDeriv& dx);
+    virtual SReal getPotentialEnergy(const core::MechanicalParams* /*mparams*/,
+                                     const DataVecCoord&  /* x */) const;
     virtual void updateStiffness( const VecCoord& x );
-
-    virtual void addKToMatrix(const core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix );
+    virtual void addKToMatrix(const core::MechanicalParams*
+                              mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix );
 
     void draw(const core::visual::VisualParams* vparams);
     void drawPlane(const core::visual::VisualParams*, float size=0.0f);
