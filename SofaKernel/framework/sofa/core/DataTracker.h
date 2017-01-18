@@ -184,7 +184,7 @@ namespace core
 
             // the input needs to be inform their output (including this DataTrackerFunctor)
             // are not dirty, to be sure they will call setDirtyValue when they are modified
-            cleanDirtyOutputsOfInputs(params);
+            cleanDirty(params);
         }
 
 
