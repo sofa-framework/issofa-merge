@@ -97,13 +97,13 @@ void UniformMass<DataTypes, MassType>::reinitDefaultImpl()
         m_doesTopoChangeAffect = true;
     }
 
-    if(d_totalMass.getValue() < 0.0 || d_mass.getValue() < 0.0){
+    if(d_totalMass.getValue() < 0.0 || d_mass.getValue().mass < 0.0){
         msg_warning(this) << "The mass or totalmass data field cannot have negative values.\n"
                              "Thus we will use the default value  that are mass = 1.0 and totalmass = mass * num_position. \n"
                              "To remove this warning you need to use positive values in 'totalmass' and 'mass' data field";
 
         d_totalMass.setValue(0.0) ;
-        d_mass.setValue(1.0) ;
+        d_mass.setValue((MassType)1.0) ;
     }
 
     //Update mass and totalMass
@@ -118,8 +118,8 @@ void UniformMass<DataTypes, MassType>::reinitDefaultImpl()
         d_totalMass.setValue ( indices.size() * (Real)d_mass.getValue().mass );    
     }
     
-    mass.beginEdit()->recalc();
-    mass.endEdit();
+    d_mass.beginEdit()->recalc();
+    d_mass.endEdit();
 
     sout<< "mass =" << this->d_mass.getValue() << sendl;
 }

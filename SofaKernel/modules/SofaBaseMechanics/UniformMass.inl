@@ -185,14 +185,14 @@ void UniformMass<DataTypes, MassType>::reinit()
             indices.push_back(i);
         m_doesTopoChangeAffect = true;
     }
-
-    if(d_totalMass.getValue() < 0.0 || d_mass.getValue() < 0.0){
+    sofa::defaulttype::MassAccessor< MassType > accessor;
+    if(d_totalMass.getValue() < 0.0 || (SReal)( accessor(d_mass.getValue())) < 0.0){
         msg_warning(this) << "The mass or totalmass data field cannot have negative values.\n"
                              "Switching back to the default value, mass = 1.0 and totalmass = mass * num_position. \n"
                              "To remove this warning you need to use positive values in totalmass and mass data field";
 
         d_totalMass.setValue(0.0) ;
-        d_mass.setValue(1.0) ;
+        d_mass.setValue((MassType)1.0) ;
     }
 
     //Update mass and totalMass

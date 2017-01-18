@@ -268,7 +268,7 @@ struct UniformMassTest :  public ::testing::Test
         EXPECT_TRUE( mass != nullptr ) ;
 
         if(mass!=nullptr){
-            EXPECT_EQ( mass->getMass(), 40.0 ) ;
+            EXPECT_EQ( mass->getMass().mass, 40.0 ) ;
             EXPECT_EQ( mass->getTotalMass(), 80.0 ) ;
         }
     }

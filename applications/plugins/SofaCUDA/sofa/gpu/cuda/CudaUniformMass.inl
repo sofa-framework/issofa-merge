@@ -160,7 +160,7 @@ void UniformMass<gpu::cuda::CudaRigid3fTypes, sofa::defaulttype::RigidMass<3,flo
     const VecDeriv& _dx = dx.getValue();
 
 
-    UniformMassCudaRigid3f_addMDx(_dx.size(), (float)(mass.getValue().mass*factor), _f.deviceWrite(), _dx.deviceRead());
+    UniformMassCudaRigid3f_addMDx(_dx.size(), (float)(d_mass.getValue().mass*factor), _f.deviceWrite(), _dx.deviceRead());
 
 //	for(int i = 0 ; i < _f.size() ; ++i)
 //		std::cout << "CPU "<< i << "  : " << _f[i] << std::endl;
@@ -214,7 +214,7 @@ template <>
 SReal UniformMass<gpu::cuda::CudaRigid3fTypes,sofa::defaulttype::RigidMass<3,float> >::getElementMass(unsigned int ) const
 {
     sofa::defaulttype::MassAccessor< MassType > accessor;
-    return (SReal)( accessor( _mass.getValue().mass ) );
+    return (SReal)( accessor( d_mass.getValue() ) );
 }
 
 template <>
