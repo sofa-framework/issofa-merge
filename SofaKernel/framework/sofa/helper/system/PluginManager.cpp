@@ -263,11 +263,10 @@ std::string PluginManager::findPlugin(const std::string& pluginName, const std::
     std::string name(pluginName);
     name  += suffix;
 
-#endif
 #if defined(_DEBUG) && defined(_MSC_VER) 
 	 name += "_d";
+#endif
     const std::string libName = DynamicLibrary::prefix + name + "." + DynamicLibrary::extension;
-
     // First try: case sensitive
     for (std::vector<std::string>::iterator i = m_searchPaths.begin(); i!=m_searchPaths.end(); i++)
     {
