@@ -51,7 +51,7 @@ template<class DataTypes>
 PlaneForceField<DataTypes>::PlaneForceField() :
      d_planeNormal(initData(&d_planeNormal, "normal", "plane normal. (default=[0,1,0])"))
     // TODO(dmarchal): d coef is "jargon" that is not very helpfull if you ignore how is defined the model.
-    , planeD(initData(&planeD, VecReal(1, Real(0)), "d", "plane d coef, either one value for all"))
+    , d_planeD(initData(&d_planeD, VecReal(1, Real(0)), "d", "plane d coef, either one value for all"))
     , d_stiffness(initData(&d_stiffness, (Real)500, "stiffness", "force stiffness. (default=500)"))
     , d_damping(initData(&d_damping, (Real)5, "damping", "force damping. (default=5)"))
     , d_maxForce(initData(&d_maxForce, (Real)0, "maxForce", "if non-null , the max force that can be applied to the object. (default=0)"))
@@ -151,9 +151,9 @@ void PlaneForceField<DataTypes>::addForce(const core::MechanicalParams* /* mpara
     sofa::helper::WriteAccessor< sofa::Data< VecDeriv > > f1 = f;
     sofa::helper::ReadAccessor<  sofa::Data< VecCoord > > p1 = x;
     sofa::helper::ReadAccessor<  sofa::Data< VecDeriv > > v1 = v;
-    sofa::helper::WriteAccessor< sofa::Data< sofa::helper::vector<PlaneContact> > > contacts = this->m_contacts;
+    sofa::helper::WriteAccessor< sofa::Data< sofa::helper::vector<PlaneContact> > > contacts = this->d_contacts;
 
-    this->m_contacts.clear();
+    contacts.clear();
     f1.resize(p1.size());
 
     Real limit = this->d_maxForce.getValue();
@@ -172,7 +172,7 @@ void PlaneForceField<DataTypes>::addForce(const core::MechanicalParams* /* mpara
         for(std::size_t i=0;i<p1.size();++i)
         {
             DPos force;
-            Real planeOffset = i >= d_planeD.size() ? d_planeD[0] : d_planeD[i];
+            Real planeOffset = i >= planeD.size() ? planeD[0] : planeD[i];
             Real d = computePlaneForce<DataTypes>( force, p1[i], v1[i], planeN, planeOffset, stiff, damp, bilateral);
             const bool addForce = d<0 || bilateral;
             if(addForce) 
@@ -223,7 +223,7 @@ void PlaneForceField<DataTypes>::addDForce(const core::MechanicalParams* mparams
 
     sofa::helper::WriteAccessor< core::objectmodel::Data< VecDeriv > > df1 = df;
     sofa::helper::ReadAccessor< core::objectmodel::Data< VecDeriv > > dx1  = dx;
-    sofa::helper::ReadAccessor< sofa::Data<sofa::helper::vector<PlaneContact> > > contacts        = this->m_contacts;
+    sofa::helper::ReadAccessor< sofa::Data<sofa::helper::vector<PlaneContact> > > contacts        = this->d_contacts;
     df1.resize(dx1.size());
     const Real fact = (Real)(-this->d_stiffness.getValue() * mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue()));
     DPos planeN = d_planeNormal.getValue();
@@ -244,7 +244,7 @@ void PlaneForceField<DataTypes>::addKToMatrix(const core::MechanicalParams* mpar
         return ;
     }
     const Real fact = (Real)(-this->d_stiffness.getValue()*mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue()));
-    sofa::helper::ReadAccessor< sofa::Data<sofa::helper::vector<PlaneContact> > > contacts = this->m_contacts;
+    sofa::helper::ReadAccessor< sofa::Data<sofa::helper::vector<PlaneContact> > > contacts = this->d_contacts;
     Deriv normal;
     DataTypes::setDPos(normal, d_planeNormal.getValue());
     sofa::core::behavior::MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
@@ -271,9 +271,9 @@ void PlaneForceField<DataTypes>::updateStiffness( const VecCoord& vx )
         return ;
     }
     sofa::helper::ReadAccessor<VecCoord> x = vx;
-    sofa::helper::ReadAccessor<sofa::Data< sofa::helper::vector< unsigned > > > indices = this->indices; 
-    sofa::helper::ReadAccessor<sofa::Data< VecReal > > planeD = this->planeD;
-    sofa::helper::WriteAccessor< sofa::Data< sofa::helper::vector<PlaneContact> > > contacts = this->m_contacts;
+    sofa::helper::ReadAccessor<sofa::Data< sofa::helper::vector< unsigned > > > indices = this->d_indices;
+    sofa::helper::ReadAccessor<sofa::Data< VecReal > > planeD = this->d_planeD;
+    sofa::helper::WriteAccessor< sofa::Data< sofa::helper::vector<PlaneContact> > > contacts = this->d_contacts;
     contacts.clear();
 
     if(indices.empty() )
@@ -281,7 +281,7 @@ void PlaneForceField<DataTypes>::updateStiffness( const VecCoord& vx )
         for (unsigned int i=0; i< x.size(); ++i)
         {
             const Real planeOffset = i >= planeD.size() ? planeD[0] : planeD[i];
-            Real d = DataTypes::getCPos(x[i])*planeNormal.getValue()-planeOffset;
+            Real d = DataTypes::getCPos(x[i])*d_planeNormal.getValue()-planeOffset;
             if (d<0)
                 contacts.push_back(PlaneContact(i,d));
         }
@@ -292,7 +292,7 @@ void PlaneForceField<DataTypes>::updateStiffness( const VecCoord& vx )
         {
             unsigned int i = indices[ii];
             const Real planeOffset = i >= planeD.size() ? planeD[0] : planeD[i];
-            Real d = DataTypes::getCPos(x[i])*planeNormal.getValue()-planeOffset;
+            Real d = DataTypes::getCPos(x[i])*d_planeNormal.getValue()-planeOffset;
             if (d<0)
                 contacts.push_back(PlaneContact(i,d));           
         }
@@ -337,10 +337,10 @@ void PlaneForceField<DataTypes>::drawPlane(const core::visual::VisualParams* vpa
 {
     if (size == 0.0f)
     {
-        size = (float)drawSize.getValue();
+        size = (float)d_drawSize.getValue();
     }
     
-    sofa::helper::ReadAccessor< sofa::Data<sofa::helper::vector<PlaneContact> > > contacts = this->m_contacts;
+    sofa::helper::ReadAccessor< sofa::Data<sofa::helper::vector<PlaneContact> > > contacts = this->d_contacts;
     helper::ReadAccessor<VecCoord> p1 = this->mstate->readPositions();
 
     defaulttype::Vec3d normal; normal = d_planeNormal.getValue();
@@ -396,7 +396,7 @@ void PlaneForceField<DataTypes>::drawPlane(const core::visual::VisualParams* vpa
         Real         d= contacts[ci].d;
         const CPos& point1 = DataTypes::getCPos(p1[i]);
         CPos point2 = point1;
-        point2 += planeNormal.getValue()*(-d);
+        point2 += d_planeNormal.getValue()*(-d);
         if (d<0)
         {
             pointsLine.push_back(sofa::defaulttype::Vector3(point1) );

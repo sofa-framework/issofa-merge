@@ -159,7 +159,7 @@ struct PlaneForceField_test : public Sofa_test<typename TTypeTuple::DataType::Re
 
         /*Create the plane force field*/
         m_planeForceFieldSPtr = New<PlaneForceFieldType>();
-        m_planeForceFieldSPtr->d_planeD.setValue((VecReal(1, Real(0)));
+        m_planeForceFieldSPtr->d_planeD.setValue((VecReal(1, Real(0))));
 
         DPos normal;
         normal[0]=1;
@@ -178,7 +178,7 @@ struct PlaneForceField_test : public Sofa_test<typename TTypeTuple::DataType::Re
     {
         /*Create the plane force field*/
         m_planeForceFieldSPtr = New<PlaneForceFieldType>();
-        m_planeForceFieldSPtr->d_planeD.setValue(0);
+        m_planeForceFieldSPtr->d_planeD.setValue((VecReal(1, Real(0))));
 
         DPos normal;
         normal[0]=1;

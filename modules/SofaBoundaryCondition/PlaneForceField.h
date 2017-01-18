@@ -137,23 +137,17 @@ public:
     Data<Real>                                        d_damping;
     Data<Real>                                        d_maxForce;
     Data<sofa::helper::vector< unsigned > >           d_indices; //< BaseMeshTopology should provide a way to get the PointID from the array of points.
-    /// optional range of local DOF indices. Any computation involving indices outside of this
-    /// range are discarded (useful for parallelization using mesh partitionning)
-    Data< defaulttype::Vec<2,int> > d_localRange;
 
     Data<bool>               d_drawIsEnabled;
     Data<defaulttype::Vec3f> d_drawColor;
     Data<Real>               d_drawSize;
     /// option bilateral : if true, the force field is applied on both side of the plane
-    Data<bool>                                        bilateral;
+    Data<bool>                                        d_bilateral;
     
-    sofa::Data< sofa::helper::vector<PlaneContact > > m_contacts;
+    sofa::Data< sofa::helper::vector<PlaneContact > > d_contacts;
 
 protected:
     PlaneForceField() ;
-
-        , indices(initData(&indices,"indices","If not empty the list of indices where this forcefield is applied"))
-        , contacts( initData(&contacts, "contacts","The information related to the points in violation with the plane"))
 
 public:
 
