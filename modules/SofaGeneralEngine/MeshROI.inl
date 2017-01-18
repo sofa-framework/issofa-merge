@@ -91,7 +91,6 @@ MeshROI<DataTypes>::MeshROI()
     , d_drawTetrahedra( initData(&d_drawTetrahedra,false,"drawTetrahedra","Draw Tetrahedra") )
     , d_drawSize( initData(&d_drawSize,0.0,"drawSize","rendering size for mesh and topological elements") )
     , d_doUpdate( initData(&d_doUpdate,false,"doUpdate","Update the computation (not only at the init)") )
-    , first( initData(&first, false, "first", "perso (TODO: what is this???)"))
 {
     d_indices.beginEdit()->push_back(0);
     d_indices.endEdit();
