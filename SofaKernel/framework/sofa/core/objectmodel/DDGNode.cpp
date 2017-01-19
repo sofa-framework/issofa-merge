@@ -226,8 +226,19 @@ void DDGNode::requestUpdateIfDirty(const core::ExecParams* params)
             owner->sout << "Data " << getName() << " has been updated." << owner->sendl;
 #endif
 
-        cleanDirty(params);
+        for(DDGLinkIterator it=inputs.begin(params), itend=inputs.end(params); it != itend; ++it)
+            (*it)->dirtyFlags[aspect].dirtyOutputs = 0;
+
+        state.updateThreadID = -1;
     }
+    else // else nothing to do, as another thread already updated this while we were waiting to acquire the lock
+    {
+#ifdef SOFA_DDG_TRACE
+        if (getOwner())
+            getOwner()->serr << "Data " << getName() << " update() from multiple threads (" << state.lastUpdateThreadID << " and " << currentThreadID << ")" << getOwner()->sendl;
+#endif
+    }
+
 }
 
 void DDGNode::copyAspect(int destAspect, int srcAspect)
