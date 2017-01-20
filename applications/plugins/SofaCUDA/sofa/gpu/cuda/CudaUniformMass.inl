@@ -382,7 +382,7 @@ template <>
 SReal UniformMass<gpu::cuda::CudaRigid3dTypes,sofa::defaulttype::RigidMass<3,double> >::getElementMass(unsigned int ) const
 {
     sofa::defaulttype::MassAccessor< MassType > accessor;
-    return (SReal)( accessor( _mass.getValue().mass ) );
+    return (SReal)( accessor( d_mass.getValue() ) );
 }
 
 template <>
