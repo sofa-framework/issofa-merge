@@ -209,13 +209,13 @@ defaulttype::Vector6 Mass<DataTypes>::getMomentum( const MechanicalParams* /*mpa
 template<class DataTypes>
 void Mass<DataTypes>::addKToMatrix(const MechanicalParams* /*mparams*/, const sofa::core::behavior::MultiMatrixAccessor* /*matrix*/)
 {
-    serr << "ERROR("<<getClassName()<<"): addKToMatrix not implemented." << sendl;
+//    serr << "ERROR("<<getClassName()<<"): addKToMatrix not implemented." << sendl;
 }
 
 template<class DataTypes>
 void Mass<DataTypes>::addBToMatrix(const MechanicalParams* /*mparams*/, const sofa::core::behavior::MultiMatrixAccessor* /*matrix*/)
 {
-    serr << "ERROR("<<getClassName()<<"): addBToMatrix not implemented." << sendl;
+//    serr << "ERROR("<<getClassName()<<"): addBToMatrix not implemented." << sendl;
 }
 
 template<class DataTypes>
