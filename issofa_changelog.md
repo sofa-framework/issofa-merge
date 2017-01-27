@@ -16,7 +16,8 @@ Add a position, velocity and response factor in order to correct the constraint.
 ### Moved files
 
 ------------------------------------------------
-## issofa_beamfemff
+
+## issofa_beamfemff
 
 
 ### New features
@@ -35,7 +36,8 @@ young modulus was in "ReadOnly", now set as "SetRequired" (same as poisson ratio
 ### Moved files
 
 ------------------------------------------------
-## issofa_bugfix
+
+## issofa_bugfix
 
 
 ### New features
@@ -79,7 +81,8 @@ VoxelGridLoader: std::unique result was not used
 ### Moved files
 
 ------------------------------------------------
-## issofa_build
+
+## issofa_build
 
 ### New features
 
@@ -98,7 +101,8 @@ Fix missing link of SofaGraphComponent in SofaOpenglVisual's CMakeList for windo
 
 ### Moved files
 ------------------------------------------------
-## issofa_clean
+
+## issofa_clean
 
 ### New features
 
@@ -134,7 +138,8 @@ Fix warnings with gcc.
 ### Moved files
 
 ------------------------------------------------
-## issofa_collision
+
+## issofa_collision
 
 
 ### New features
@@ -153,7 +158,8 @@ TriangleModel and LineModel: add accessors to rest position.
 ### Moved files
 
 ------------------------------------------------
-## issofa_constraintsolving
+
+## issofa_constraintsolving
 
 ### New features
 Add correctionVelocityFactor and correctionPositionFactor Data in UncoupledConstraintCorrection to experiment with modulating the constraint response influence on visual tool positions (UNTESTED).
@@ -186,7 +192,8 @@ Move contact identifier code in a separate file to avoid inelegant FrictionConta
 
 
 ------------------------------------------------
-## issofa_datainit
+
+## issofa_datainit
 
 
 ### New features
@@ -204,7 +211,8 @@ Base: Detect bad calls and invalid conversions in Base::initData0.
 ### Moved files
 
 ------------------------------------------------
-## issofa_debug
+
+## issofa_debug
 
 ### New features
 Add a vector_access_failure looks at SOFA_DEBUG_VECTOR_ASSERT environment variable to control if assert() is called (enabled by default).
@@ -226,7 +234,8 @@ Fix the export of graphviz graphs with multi-mappings, topological mappings, sla
 ### Moved files
 
 ------------------------------------------------
-## issofa_deprecatedapi
+
+## issofa_deprecatedapi
 
 
 ### New features
@@ -245,7 +254,8 @@ PartialFixedConstraint: fix applyConstraint API.
 ### Moved files
 
 ------------------------------------------------
-## issofa_draw
+
+## issofa_draw
 
 
 ### New features
@@ -265,7 +275,8 @@ PointSetGeometryAlgorithms: draw of the topology items indices even if the bbox 
 ### Moved files
 
 ------------------------------------------------
-## issofa_engines
+
+## issofa_engines
 
 
 ### New features
@@ -287,7 +298,8 @@ MergeVectors: vectors of unsigned int can now be merged with MergeVectors.
 ### Moved files
 
 ------------------------------------------------
-## issofa_fasttriangularbendingff
+
+## issofa_fasttriangularbendingff
 
 
 ### New features
@@ -307,7 +319,8 @@ FastTriangularBendingSprings: bending spring was using a wrong formula.
 ### Moved files
 
 ------------------------------------------------
-## issofa_gui
+
+## issofa_gui
 
 
 ### New features
@@ -325,7 +338,8 @@ runSofa now forwards nbIterations to all GUI and not only Batch
 ### Moved files
 
 ------------------------------------------------
-## issofa_mask
+
+## issofa_mask
 This category is not about mask, but improves were coupled with mask modifications not reported.
 
 ### New features
@@ -343,7 +357,8 @@ Fix compilation errors in mass.
 ### Moved files
 
 ------------------------------------------------
-## issofa_meshspringff
+
+## issofa_meshspringff
 
 
 ### New features
@@ -361,7 +376,8 @@ MeshSpringForceField: add drawing of springs elongation
 ### Moved files
 
 ------------------------------------------------
-## issofa_multithreading
+
+## issofa_multithreading
 
 ### New features
 Add logGraphUpdates / logDataUpdates global variable in objectmodel to be able to debug multi-threading issue (not declared in headers, temporary until a better design is proposed)
@@ -396,7 +412,8 @@ Fix data race at startup, WorkerThread:mTaskScheduler was set by the main thread
 ### Moved files
 
 ------------------------------------------------
-## issofa_optimization
+
+## issofa_optimization
 
 
 ### New features
@@ -429,7 +446,8 @@ CompressedRowSparseMatrix: use Bloc size instead of Scalar size in fullRows() an
 ### Moved files
 
 ------------------------------------------------
-## issofa_otherfeatires
+
+## issofa_otherfeatires
 
 
 ### New features
@@ -456,7 +474,8 @@ DeformableOnRigidFrameMapping : fix compilation error
 ### Moved files
 
 ------------------------------------------------
-## issofa_planeff
+
+## issofa_planeff
 
 
 ### New features
@@ -475,7 +494,8 @@ PlaneForceField: can define a different height for each point
 ### Moved files
 
 ------------------------------------------------
-## issofa_plugins
+
+## issofa_plugins
 
 
 ### New features
@@ -493,7 +513,8 @@ Extra logs in RequiredPlugin logging.
 ### Moved files
 
 ------------------------------------------------
-## issofa_python
+
+## issofa_python
 
 
 ### New features
@@ -520,7 +541,8 @@ Fix a memory leak which happens whenever an object is transferred from C++ to Py
 
 ### Moved files
 ------------------------------------------------
-## issofa_rigidbody
+
+## issofa_rigidbody
 
 
 ### New features
@@ -546,7 +568,8 @@ fix RigidMassComplianceEngine: - data d_rigidComplianceUnzipped must be specifie
 ### Moved files
 
 ------------------------------------------------
-## issofa_sofaphysicsapi
+
+## issofa_sofaphysicsapi
 
 
 ### New features
@@ -565,7 +588,8 @@ SofaPhysicsSimulation : fix memory leak
 ### Moved files
 
 ------------------------------------------------
-## issofa_solvers
+
+## issofa_solvers
 
 
 ### New features
@@ -584,7 +608,8 @@ look for METIS library in SofaGeneral
 ### Moved files
 
 ------------------------------------------------
-## issofa_sph
+
+## issofa_sph
 
 
 ### New features
@@ -603,7 +628,8 @@ SPHKernel:  license and include guard
 ### Moved files
 
 ------------------------------------------------
-## issofa_springff
+
+## issofa_springff
 
 
 ### New features
@@ -621,7 +647,8 @@ SpringForceField : make all Data public to be able to edit the springs into from
 ### Moved files
 
 ------------------------------------------------
-## issofa_subsetmultimapping
+
+## issofa_subsetmultimapping
 
 
 ### New features
@@ -642,7 +669,8 @@ SubsetMultimapping : remove duplicated line
 ### Moved files
 
 ------------------------------------------------
-## issofa_tests
+
+## issofa_tests
 
 
 ### New features
@@ -661,7 +689,8 @@ Warnings in DataTest.cpp
 ### Moved files
 
 ------------------------------------------------
-## issofa_topology
+
+## issofa_topology
 
 
 ### New features
@@ -690,7 +719,8 @@ re-enable Propagate of topological changes inbetween triangle creation and remov
 ### Moved files
 
 ------------------------------------------------
-## issofa_vectorid
+
+## issofa_vectorid
 
 ### New features
 integer_id : Add a DataTypeInfo for vector_id to allow vector_id data link in the xml files
@@ -707,7 +737,8 @@ integer_id : Fix compilation with gcc
 ### Moved files
 
 ------------------------------------------------
-## issofa_visitors
+
+## issofa_visitors
 
 
 ### New features
